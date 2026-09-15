@@ -21,8 +21,8 @@ namespace UmbraMenu
         /// <summary>Applies host-only behavior to the current body and schedules a single revive per death.</summary>
         public static void Update()
         {
-            bool enabled = State.Player.GodToggle && ModernMenu.HasHost;
-            var health = UmbraMenu.LocalHealth;
+            bool enabled = State.Player.GodToggle && MenuController.HasHost;
+            var health = UmbraRuntime.LocalHealth;
             if (!enabled || owner != health) ReleaseOwned();
             if (!enabled) { wasAlive = false; reviveAt = -1; return; }
             bool alive = health && health.alive;
@@ -31,7 +31,7 @@ namespace UmbraMenu
             if (mode == 3 && reviveAt >= 0 && Time.unscaledTime >= reviveAt)
             {
                 reviveAt = -1;
-                if (!alive && Run.instance && UmbraMenu.LocalPlayer) UmbraMenu.LocalPlayer.RespawnExtraLife();
+                if (!alive && Run.instance && UmbraRuntime.LocalPlayer) UmbraRuntime.LocalPlayer.RespawnExtraLife();
             }
             if (!alive) { ReleaseOwned(); return; }
             owner = health;
@@ -40,9 +40,9 @@ namespace UmbraMenu
                 if (!applied) { originalGod = health.godMode; applied = true; }
                 health.godMode = true;
             }
-            else if (mode == 1 && !hurtboxes && UmbraMenu.LocalPlayerBody.mainHurtBox)
+            else if (mode == 1 && !hurtboxes && UmbraRuntime.LocalPlayerBody.mainHurtBox)
             {
-                hurtboxes = UmbraMenu.LocalPlayerBody.mainHurtBox.hurtBoxGroup;
+                hurtboxes = UmbraRuntime.LocalPlayerBody.mainHurtBox.hurtBoxGroup;
                 if (hurtboxes) hurtboxes.hurtBoxesDeactivatorCounter++;
             }
             else if (mode == 2 && health.health < health.fullHealth) health.Heal(health.fullHealth - health.health, default(ProcChainMask), false);

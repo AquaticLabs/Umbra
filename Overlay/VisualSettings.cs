@@ -132,12 +132,12 @@ namespace UmbraMenu
             {
                 // Overwrite preserves defaults for fields added after the user's file was written.
                 var candidate = CreateDefaults();
-                JsonUtility.FromJsonOverwrite(json, candidate);
+                SettingsJson.Populate(json, candidate);
                 Validate(candidate); Current = candidate;
             }, out warning);
             LastError = warning; preserveInvalid = warning != null && File.Exists(Path);
             loaded = true;
-            lastSaved = observed = JsonUtility.ToJson(Current, true);
+            lastSaved = observed = SettingsJson.Serialize(Current);
             checkAt = changedAt = retryAt = 0;
             if (warning != null) Debug.LogWarning("Umbra visual preferences: " + warning);
         }
@@ -147,7 +147,7 @@ namespace UmbraMenu
         {
             if (!loaded) return;
             Validate(Current);
-            string json = JsonUtility.ToJson(Current, true);
+            string json = SettingsJson.Serialize(Current);
             if (json == lastSaved && File.Exists(Path) && !preserveInvalid) return;
             try
             {
@@ -163,7 +163,7 @@ namespace UmbraMenu
         {
             if (!loaded || Time.unscaledTime < checkAt) return;
             checkAt = Time.unscaledTime + 0.5f;
-            string json = JsonUtility.ToJson(Current, true);
+            string json = SettingsJson.Serialize(Current);
             if (json != observed) { observed = json; changedAt = Time.unscaledTime; }
             if ((json == lastSaved && !preserveInvalid) || Time.unscaledTime - changedAt < 1f || Time.unscaledTime < retryAt) return;
             try { Save(); }

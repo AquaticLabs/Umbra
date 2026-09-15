@@ -21,13 +21,13 @@
     <GameManagedDir Condition="'$(GameManagedDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Risk of Rain 2\Risk of Rain 2_Data\Managed</GameManagedDir>
   </PropertyGroup>
   <ItemDefinitionGroup><Reference><Private>False</Private></Reference></ItemDefinitionGroup>
-  <!-- Only the maintained minimal runtime is compiled. Original menus remain on disk as migration reference. -->
+  <!-- Explicit source areas keep archived and generated files out of the runtime. -->
   <ItemGroup>
     <Compile Include="Loader.cs" />
-    <Compile Include="UmbraMenu.cs" />
-    <Compile Include="ModernMenu.cs" />
+    <Compile Include="Runtime\*.cs" />
     <Compile Include="ESPHelper.cs" />
     <Compile Include="UI\*.cs" />
+    <Compile Include="UI\Pages\*.cs" />
     <Compile Include="Gameplay\*.cs" />
     <Compile Include="Overlay\*.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -40,6 +40,7 @@
     <Reference Include="mscorlib"><HintPath>$(GameManagedDir)\mscorlib.dll</HintPath></Reference>
     <Reference Include="System"><HintPath>$(GameManagedDir)\System.dll</HintPath></Reference>
     <Reference Include="System.Core"><HintPath>$(GameManagedDir)\System.Core.dll</HintPath></Reference>
+    <Reference Include="SimpleJSON"><HintPath>$(GameManagedDir)\SimpleJSON.dll</HintPath></Reference>
     <Reference Include="System.Xml"><HintPath>$(GameManagedDir)\System.Xml.dll</HintPath></Reference>
     <Reference Include="netstandard"><HintPath>$(GameManagedDir)\netstandard.dll</HintPath></Reference>
     <Reference Include="RoR2"><HintPath>$(GameManagedDir)\RoR2.dll</HintPath></Reference>

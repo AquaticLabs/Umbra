@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using SimpleJSON;
 using UnityEngine;
 
 namespace UmbraMenu
@@ -15,8 +16,6 @@ namespace UmbraMenu
             public bool HostOnly;
             public Action Action;
         }
-        [Serializable] private sealed class SavedKey { public string Id; public int Key; }
-        [Serializable] private sealed class SavedKeys { public List<SavedKey> Keys = new List<SavedKey>(); }
         private static readonly List<Binding> bindings = new List<Binding>();
         private static readonly KeyCode[] keys = (KeyCode[])Enum.GetValues(typeof(KeyCode));
         private static Binding capturing;
@@ -45,6 +44,7 @@ namespace UmbraMenu
             Toggle("Always sprint", () => State.Movement.alwaysSprintToggle, v => State.Movement.alwaysSprintToggle = v);
             Toggle("Flight", () => State.Movement.flightToggle, v => State.Movement.flightToggle = v, false, KeyCode.C);
             Toggle("Jump pack", () => State.Movement.jumpPackToggle, v => State.Movement.jumpPackToggle = v);
+            Toggle("Railgunner Perfect Reload", () => State.Player.RailgunPerfectReload, v => State.Player.RailgunPerfectReload = v);
             Toggle("Enemy ESP", () => State.Render.renderMobs, v => State.Render.renderMobs = v);
             Toggle("Interactable ESP", () => State.Render.renderInteractables, v => State.Render.renderInteractables = v);
             Toggle("Active mod strip", () => State.Render.renderMods, v => State.Render.renderMods = v);
@@ -60,23 +60,24 @@ namespace UmbraMenu
             Toggle("FPS / ping", () => MiscFeatures.PerformanceHud, v => MiscFeatures.PerformanceHud = v);
             Toggle("Run timer", () => MiscFeatures.RunTimer, v => MiscFeatures.RunTimer = v);
             Toggle("Coordinates", () => MiscFeatures.Coordinates, v => MiscFeatures.Coordinates = v);
-            Add("Open Player", () => ModernMenu.OpenPage(0), KeyCode.Z);
-            Add("Open World", () => ModernMenu.OpenPage(4), KeyCode.B);
-            Add("Open Items", () => ModernMenu.OpenPage(3), KeyCode.I);
+            Add("Open Player", () => MenuController.OpenPage(0), KeyCode.Z);
+            Add("Open World", () => MenuController.OpenPage(4), KeyCode.B);
+            Add("Open Items", () => MenuController.OpenPage(3), KeyCode.I);
             CancelCapture();
             string warning;
             SettingsFile.Read(Path, json =>
             {
-                var saved = new SavedKeys();
-                JsonUtility.FromJsonOverwrite(json, saved);
-                if (saved.Keys == null) throw new InvalidDataException("Missing key assignment list.");
+                var saved = SettingsJson.ParseObject(json)["Keys"];
+                if (saved == null || !saved.IsArray) throw new InvalidDataException("Missing key assignment list.");
                 // Stage parsing first, then apply validated entries. Duplicate keys have one deterministic owner.
                 var assignments = new List<KeyValuePair<Binding, KeyCode>>();
-                foreach (var key in saved.Keys)
+                foreach (var key in saved.Children)
                 {
-                    var binding = key == null ? null : Find(key.Id);
-                    if (binding != null && Enum.IsDefined(typeof(KeyCode), key.Key) && !Reserved((KeyCode)key.Key))
-                        assignments.Add(new KeyValuePair<Binding, KeyCode>(binding, (KeyCode)key.Key));
+                    if (!key.IsObject || !key["Id"].IsString || !key["Key"].IsNumber) throw new InvalidDataException("Invalid key assignment.");
+                    var binding = Find(key["Id"].Value);
+                    int code = key["Key"].AsInt;
+                    if (binding != null && Enum.IsDefined(typeof(KeyCode), code) && !Reserved((KeyCode)code))
+                        assignments.Add(new KeyValuePair<Binding, KeyCode>(binding, (KeyCode)code));
                 }
                 foreach (var assignment in assignments) Assign(assignment.Key, assignment.Value);
             }, out warning);
@@ -122,9 +123,9 @@ namespace UmbraMenu
                 }
                 return;
             }
-            if (ModernMenu.IsOpen || Utility.CursorIsVisible()) return;
+            if (MenuController.IsOpen || GameInput.CursorIsVisible()) return;
             foreach (var binding in bindings)
-                if (binding.Action != null && binding.Key != KeyCode.None && (!binding.HostOnly || ModernMenu.HasHost) && Input.GetKeyDown(binding.Key))
+                if (binding.Action != null && binding.Key != KeyCode.None && (!binding.HostOnly || MenuController.HasHost) && Input.GetKeyDown(binding.Key))
                 { binding.Action(); break; }
         }
         /// <summary>Assigns a key to exactly one registered binding; None may be shared.</summary>
@@ -137,9 +138,9 @@ namespace UmbraMenu
         /// <summary>Serializes assignments in stable registration order without gameplay toggle state.</summary>
         private static string Serialize()
         {
-            var data = new SavedKeys();
-            foreach (var binding in bindings) data.Keys.Add(new SavedKey { Id = binding.Id, Key = (int)binding.Key });
-            return JsonUtility.ToJson(data, true);
+            var keys = new JSONArray();
+            foreach (var binding in bindings) keys.Add(new JSONObject { ["Id"] = binding.Id, ["Key"] = (int)binding.Key });
+            return new JSONObject { ["Keys"] = keys }.ToString(2);
         }
 
         /// <summary>Retries failed writes without losing the user's in-memory assignment.</summary>

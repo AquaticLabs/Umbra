@@ -4,13 +4,21 @@ using System.Globalization;
 using System.Linq;
 using RoR2;
 using UnityEngine;
+using static UmbraMenu.MenuController;
+using static UmbraMenu.MenuWidgets;
+using static UmbraMenu.MenuTheme;
+using static UmbraMenu.MenuActions;
 
 namespace UmbraMenu
 {
-    internal static partial class ModernMenu
+    /// <summary>World page; owns its local editing state and preserves the user's card layout.</summary>
+    internal sealed class WorldPage : IMenuPage
     {
+        public string Title { get { return "World"; } }
+        public string Description { get { return "Host-side stage, teleporter and individual portal controls."; } }
+
         /// <summary>Provides useful local telemetry and explicit, scene-scoped recovery actions.</summary>
-        private static void DrawWorld(float width)
+        public void Build(float width)
         {
             DrawPortalCards();
             AddCard(1, "TELEPORTER", c =>
@@ -24,7 +32,7 @@ namespace UmbraMenu
 
             AddCard(1, "STAGE", c =>
             {
-                DrawReadout(c, "Scene", UmbraMenu.currentScene.IsValid() ? UmbraMenu.currentScene.name : "—");
+                DrawReadout(c, "Scene", UmbraRuntime.currentScene.IsValid() ? UmbraRuntime.currentScene.name : "—");
                 DrawReadout(c, "Run active", Run.instance ? "YES" : "NO");
                 DrawParagraph(c, "Host authority is required for stage and director mutations.");
                 DrawButtonRow(c,
@@ -39,7 +47,7 @@ namespace UmbraMenu
             }, true);
         }
                 /// <summary>Lists every loaded portal card independently, including DLC variants, with no all-portals side effects.</summary>
-        private static void DrawPortalCards()
+        private void DrawPortalCards()
         {
             SpawnCatalog.Request();
             AddCard(0, "INDIVIDUAL PORTALS", c =>

@@ -19,17 +19,17 @@ namespace UmbraMenu
                 bool released = Input.GetMouseButtonUp(0) || Input.GetMouseButtonUp(1) || Input.GetMouseButtonUp(2);
                 if (!held && !released) dragging = false;
                 Vector3 mouse = Input.mousePosition;
-                bool inside = ModernMenu.IsOpen && ModernMenu.WindowRect.Contains(new Vector2(mouse.x, Screen.height - mouse.y));
+                bool inside = MenuController.IsOpen && MenuController.WindowRect.Contains(new Vector2(mouse.x, Screen.height - mouse.y));
                 if (!inside && Input.GetMouseButtonDown(0)) KeyboardFocused = false;
                 if (inside && (Input.GetMouseButtonDown(0) || Input.GetMouseButtonDown(1) || Input.GetMouseButtonDown(2))) dragging = true;
-                return inside || dragging || KeyBindings.IsCapturing || (ModernMenu.IsOpen && KeyboardFocused);
+                return inside || dragging || KeyBindings.IsCapturing || (MenuController.IsOpen && KeyboardFocused);
             }
         }
         /// <summary>Matches the transparent raycast shield to the visible window, leaving the rest of the screen untouched.</summary>
         public static void Update()
         {
             bool capture = Capturing;
-            if (!blocker && ModernMenu.IsOpen)
+            if (!blocker && MenuController.IsOpen)
             {
                 blocker = new GameObject("Umbra pointer shield", typeof(RectTransform), typeof(Canvas), typeof(GraphicRaycaster));
                 Object.DontDestroyOnLoad(blocker);
@@ -43,10 +43,10 @@ namespace UmbraMenu
                 surface.GetComponent<CanvasRenderer>().cullTransparentMesh = false;
             }
             if (!blocker) return;
-            blocker.SetActive(ModernMenu.IsOpen || capture);
+            blocker.SetActive(MenuController.IsOpen || capture);
             if (rect)
             {
-                Rect bounds = ModernMenu.WindowRect;
+                Rect bounds = MenuController.WindowRect;
                 rect.anchoredPosition = new Vector2(bounds.x, -bounds.y);
                 rect.sizeDelta = bounds.size;
             }

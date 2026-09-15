@@ -123,7 +123,7 @@ namespace UmbraMenu
         /// <summary>Spawns the exact selected card with host/range/team validation and no shared-asset mutations.</summary>
         public static void Spawn(Entry entry)
         {
-            if (!ModernMenu.HasHost || !UmbraMenu.characterCollected || !Run.instance) throw new InvalidOperationException("A living host in a run is required.");
+            if (!MenuController.HasHost || !UmbraRuntime.characterCollected || !Run.instance) throw new InvalidOperationException("A living host in a run is required.");
             if (entry == null || !entry.Card || !DirectorCore.instance) throw new InvalidOperationException("Choose a loaded spawn card.");
             foreach (var requirement in entry.Card.prefab.GetComponentsInChildren<RoR2.ExpansionManagement.ExpansionRequirementComponent>())
                 if (requirement.requiredExpansion && !Run.instance.IsExpansionEnabled(requirement.requiredExpansion)) throw new InvalidOperationException("This spawn requires an expansion enabled in the run.");
@@ -136,7 +136,7 @@ namespace UmbraMenu
                     placementMode = DirectorPlacementRule.PlacementMode.Approximate,
                     minDistance = State.Spawn.minDistance,
                     maxDistance = Mathf.Max(State.Spawn.minDistance, State.Spawn.maxDistance),
-                    position = UmbraMenu.LocalPlayerBody.footPosition
+                    position = UmbraRuntime.LocalPlayerBody.footPosition
                 }, RoR2Application.rng) { ignoreTeamMemberLimit = true };
                 if (copy is CharacterSpawnCard) request.teamIndexOverride = State.Spawn.team[State.Spawn.teamIndex];
                 var spawned = DirectorCore.instance.TrySpawnObject(request);

@@ -1,3 +1,4 @@
+using static UmbraMenu.MenuController;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -8,23 +9,23 @@ using UnityEngine;
 
 namespace UmbraMenu
 {
-    internal static partial class ModernMenu
+    internal static class MenuTheme
     {
         #region Theme resources
 
-        private static GUIStyle windowStyle, headerStyle, sidebarStyle, cardStyle, titleStyle, subtitleStyle,
+        internal static GUIStyle windowStyle, headerStyle, sidebarStyle, cardStyle, titleStyle, subtitleStyle,
             sectionStyle, labelStyle, mutedStyle, valueStyle, navStyle, navActiveStyle, buttonStyle,
             dangerButtonStyle, inputStyle, toggleOnStyle, toggleOffStyle, badgeStyle, sliderStyle,
             sliderThumbStyle, scrollStyle, scrollThumbStyle;
-        private static readonly List<Texture2D> textures = new List<Texture2D>();
-        private static int builtRadius = -1;
-        private static readonly Color32 Accent = new Color32(45, 143, 255, 255);
-        private static readonly Color32 Text = new Color32(231, 240, 250, 255);
-        private static readonly Color32 Muted = new Color32(153, 176, 200, 255);
-        private static readonly Color32 Border = new Color32(36, 66, 95, 255);
+        internal static readonly List<Texture2D> textures = new List<Texture2D>();
+        internal static int builtRadius = -1;
+        internal static readonly Color32 Accent = new Color32(45, 143, 255, 255);
+        internal static readonly Color32 Text = new Color32(231, 240, 250, 255);
+        internal static readonly Color32 Muted = new Color32(153, 176, 200, 255);
+        internal static readonly Color32 Border = new Color32(36, 66, 95, 255);
 
         /// <summary>Builds native-size fonts and nine-sliced skins; rebuilds only when corner radius changes.</summary>
-        private static void EnsureStyles()
+        internal static void EnsureStyles()
         {
             int radius = Mathf.RoundToInt(Prefs.CornerRadius);
             if (builtRadius == radius) return;
@@ -63,7 +64,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Applies opacity to panel backgrounds only, leaving text fully opaque.</summary>
-        private static void Panel(Rect rect, GUIStyle style, float opacity)
+        internal static void Panel(Rect rect, GUIStyle style, float opacity)
         {
             Color previous = GUI.backgroundColor;
             GUI.backgroundColor = new Color(1, 1, 1, opacity);
@@ -72,14 +73,14 @@ namespace UmbraMenu
         }
 
         /// <summary>Creates a plain font style without a background or rich-text color overrides.</summary>
-        private static GUIStyle TextStyle(Color color, int size, FontStyle weight, TextAnchor alignment)
+        internal static GUIStyle TextStyle(Color color, int size, FontStyle weight, TextAnchor alignment)
         {
             return new GUIStyle { fontSize = size, fontStyle = weight, alignment = alignment,
                 normal = { textColor = color }, richText = false, clipping = TextClipping.Clip };
         }
 
         /// <summary>Uses matching slice borders so corners retain their radius on wide controls.</summary>
-        private static GUIStyle BoxStyle(Color fill, Color border, int radius)
+        internal static GUIStyle BoxStyle(Color fill, Color border, int radius)
         {
             int slice = radius + 2;
             return new GUIStyle { normal = { background = RoundedTexture(fill, border, radius) },
@@ -87,7 +88,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Defines all interaction states with the same slice geometry and content padding.</summary>
-        private static GUIStyle ButtonStyle(Color normal, Color hover, Color text, int size, TextAnchor alignment, int radius)
+        internal static GUIStyle ButtonStyle(Color normal, Color hover, Color text, int size, TextAnchor alignment, int radius)
         {
             var style = TextStyle(text, size, FontStyle.Normal, alignment);
             style.normal.background = RoundedTexture(normal, Border, radius);
@@ -102,7 +103,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Generates an antialiased rounded-rectangle SDF at native pixel resolution.</summary>
-        private static Texture2D RoundedTexture(Color fill, Color outline, int radius)
+        internal static Texture2D RoundedTexture(Color fill, Color outline, int radius)
         {
             const int size = 32;
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
@@ -127,7 +128,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Destroys old generated textures before a theme rebuild or component unload.</summary>
-        private static void DisposeStyles()
+        internal static void DisposeStyles()
         {
             foreach (var texture in textures) if (texture) UnityEngine.Object.Destroy(texture);
             textures.Clear();

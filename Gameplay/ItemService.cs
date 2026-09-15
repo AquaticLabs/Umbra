@@ -64,7 +64,7 @@ namespace UmbraMenu
         /// <summary>Rejects unavailable DLC items and invalid counts before touching an inventory.</summary>
         private static void Validate(Entry entry, int count)
         {
-            if (!ModernMenu.HasHost) throw new InvalidOperationException("This action requires the host.");
+            if (!MenuController.HasHost) throw new InvalidOperationException("This action requires the host.");
             if (entry == null) throw new InvalidOperationException("Choose an item or equipment first.");
             if (count < 1 || count > 100) throw new InvalidOperationException("Choose a quantity from 1 to 100.");
             if (!Run.instance) throw new InvalidOperationException("Start a run first.");
@@ -91,9 +91,9 @@ namespace UmbraMenu
         public static void Drop(Entry entry, int count, bool fromInventory)
         {
             Validate(entry, count);
-            var body = UmbraMenu.LocalPlayerBody;
-            var inventory = UmbraMenu.LocalPlayerInv;
-            if (!UmbraMenu.characterCollected || !body) throw new InvalidOperationException("A living character is required.");
+            var body = UmbraRuntime.LocalPlayerBody;
+            var inventory = UmbraRuntime.LocalPlayerInv;
+            if (!UmbraRuntime.characterCollected || !body) throw new InvalidOperationException("A living character is required.");
             if (fromInventory && (!inventory || Owned(entry, inventory) < count)) throw new InvalidOperationException("Not enough permanent copies in your inventory.");
             if (fromInventory && entry.Item && !entry.Item.canRemove) throw new InvalidOperationException("This item cannot be removed safely.");
             for (int i = 0; i < count; i++)
@@ -114,38 +114,38 @@ namespace UmbraMenu
         /// <summary>Rolls uniformly from eligible items in the chosen category, never equipment or internal items.</summary>
         public static void Roll(int count, string group)
         {
-            if (!ModernMenu.HasHost || !Run.instance || !UmbraMenu.LocalPlayerInv) throw new InvalidOperationException("A host run and inventory are required.");
+            if (!MenuController.HasHost || !Run.instance || !UmbraRuntime.LocalPlayerInv) throw new InvalidOperationException("A host run and inventory are required.");
             if (count < 1 || count > 100) throw new InvalidOperationException("Roll between 1 and 100 items.");
             var pool = Catalog.Where(e => e.Item && (group == "All" || e.Group == group) && Run.instance.IsItemAvailable(e.Item.itemIndex)).ToArray();
             if (pool.Length == 0) throw new InvalidOperationException("No eligible items in that category. Select All or an item tier.");
-            for (int i = 0; i < count; i++) Give(pool[UnityEngine.Random.Range(0, pool.Length)], UmbraMenu.LocalPlayer, 1);
+            for (int i = 0; i < count; i++) Give(pool[UnityEngine.Random.Range(0, pool.Length)], UmbraRuntime.LocalPlayer, 1);
         }
         /// <summary>Gives one eligible permanent copy of every item; equipment is excluded.</summary>
         public static void GiveAll()
         {
-            if (!ModernMenu.HasHost || !Run.instance || !UmbraMenu.LocalPlayerInv) throw new InvalidOperationException("A host run and inventory are required.");
-            foreach (var entry in Catalog) if (entry.Item && Run.instance.IsItemAvailable(entry.Item.itemIndex)) Give(entry, UmbraMenu.LocalPlayer, 1);
+            if (!MenuController.HasHost || !Run.instance || !UmbraRuntime.LocalPlayerInv) throw new InvalidOperationException("A host run and inventory are required.");
+            foreach (var entry in Catalog) if (entry.Item && Run.instance.IsItemAvailable(entry.Item.itemIndex)) Give(entry, UmbraRuntime.LocalPlayer, 1);
         }
         /// <summary>Clears removable permanent items only, preserving hidden/internal and temporary state.</summary>
         public static void ClearInventory()
         {
-            if (!ModernMenu.HasHost || !UmbraMenu.LocalPlayerInv) throw new InvalidOperationException("A host inventory is required.");
-            foreach (var entry in Catalog) if (entry.Item && entry.Item.canRemove) UmbraMenu.LocalPlayerInv.ResetItemPermanent(entry.Item.itemIndex);
+            if (!MenuController.HasHost || !UmbraRuntime.LocalPlayerInv) throw new InvalidOperationException("A host inventory is required.");
+            foreach (var entry in Catalog) if (entry.Item && entry.Item.canRemove) UmbraRuntime.LocalPlayerInv.ResetItemPermanent(entry.Item.itemIndex);
         }
         /// <summary>Applies the game's Shrine of Order inventory restacking behavior.</summary>
         public static void Restack()
         {
-            if (!ModernMenu.HasHost || !UmbraMenu.LocalPlayerInv || !Run.instance) throw new InvalidOperationException("A host run and inventory are required.");
-            UmbraMenu.LocalPlayerInv.ShrineRestackInventory(RoR2Application.rng);
+            if (!MenuController.HasHost || !UmbraRuntime.LocalPlayerInv || !Run.instance) throw new InvalidOperationException("A host run and inventory are required.");
+            UmbraRuntime.LocalPlayerInv.ShrineRestackInventory(RoR2Application.rng);
         }
         /// <summary>Replaces only the nearest available chest's selected pickup within interaction-scale range.</summary>
         public static void ReplaceNearestChest(Entry entry)
         {
             Validate(entry, 1);
-            if (!UmbraMenu.characterCollected) throw new InvalidOperationException("A living character is required.");
+            if (!UmbraRuntime.characterCollected) throw new InvalidOperationException("A living character is required.");
             var chest = UnityEngine.Object.FindObjectsOfType<ChestBehavior>().Where(c => c && c.GetComponent<PurchaseInteraction>() && c.GetComponent<PurchaseInteraction>().available)
-                .OrderBy(c => Vector3.SqrMagnitude(c.transform.position - UmbraMenu.LocalPlayerBody.corePosition)).FirstOrDefault();
-            if (!chest || Vector3.Distance(chest.transform.position, UmbraMenu.LocalPlayerBody.corePosition) > 25) throw new InvalidOperationException("No unopened chest within 25 m.");
+                .OrderBy(c => Vector3.SqrMagnitude(c.transform.position - UmbraRuntime.LocalPlayerBody.corePosition)).FirstOrDefault();
+            if (!chest || Vector3.Distance(chest.transform.position, UmbraRuntime.LocalPlayerBody.corePosition) > 25) throw new InvalidOperationException("No unopened chest within 25 m.");
             if (setChestPickup == null) throw new InvalidOperationException("Chest replacement is unavailable on this game build.");
             setChestPickup.Invoke(chest, new object[] { new UniquePickup(entry.Pickup) });
         }

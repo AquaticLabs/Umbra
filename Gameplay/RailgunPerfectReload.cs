@@ -1,42 +1,30 @@
 using RoR2;
-using UnityEngine;
 using EntityStates.Railgunner.Reload;
 
 namespace UmbraMenu
 {
     internal static class RailgunPerfectReload
     {
-        /// <summary>Installs a hook to automatically boost the railgun reload when the player has enabled the feature.</summary>
+        private static CharacterBody cachedBody;
+        private static EntityStateMachine[] machines;
+
+        /// <summary>Samples the local reload window; component discovery is cached once per body rather than every frame.</summary>
         public static void Update()
         {
-            if (!State.Player.RailgunPerfectReload)
-                return;
-
-            LocalUser localUser = LocalUserManager.GetFirstLocalUser();
-            if (localUser == null)
-                return;
-
-            CharacterBody body = localUser.cachedBody;
-            if (body == null)
-                return;
-
-            EntityStateMachine[] stateMachines =
-                body.GetComponents<EntityStateMachine>();
-
-            foreach (EntityStateMachine machine in stateMachines)
+            var body = UmbraRuntime.LocalPlayerBody;
+            if (!State.Player.RailgunPerfectReload || !UmbraRuntime.characterCollected || !body || !body.hasEffectiveAuthority)
+            { Clear(); return; }
+            if (cachedBody != body)
+            { cachedBody = body; machines = body.GetComponents<EntityStateMachine>(); }
+            foreach (var machine in machines)
             {
-                Reloading reloadState = machine.state as Reloading;
-
-                if (reloadState == null)
-                    continue;
-                    
-                if (reloadState.IsInBoostWindow())
-                {
-                    reloadState.AttemptBoost();
-                }
-
+                if (!machine || !(machine.state is Reloading reloadState)) continue;
+                if (reloadState.IsInBoostWindow()) reloadState.AttemptBoost();
                 return;
             }
         }
+
+        /// <summary>Releases body references on disable, scene change and unload.</summary>
+        public static void Clear() { cachedBody = null; machines = null; }
     }
 }

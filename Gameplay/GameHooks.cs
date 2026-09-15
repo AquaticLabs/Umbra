@@ -5,12 +5,12 @@ using UnityEngine;
 
 namespace UmbraMenu
 {
-    /// <summary>Small owned hooks for reliable camera timing and region-specific gameplay input capture.</summary>
+    /// <summary>Owned hooks for camera timing, flight velocity and region-specific input capture.</summary>
     internal static class GameHooks
     {
         private static Harmony harmony;
         public static bool Installed { get; private set; }
-        /// <summary>Installs only Umbra's two hooks; cleans up partially installed hooks on failure.</summary>
+        /// <summary>Installs Umbra's three hooks; cleans up partially installed hooks on failure.</summary>
         public static void Install()
         {
             try
@@ -36,7 +36,7 @@ namespace UmbraMenu
         /// <summary>Updates camera aim before the game evaluates its camera mode, avoiding LateUpdate order races.</summary>
         private static void CameraPrefix(CameraRigController __instance)
         {
-            if (!UmbraMenu.LocalPlayerBody || __instance.target != UmbraMenu.LocalPlayerBody.gameObject) return;
+            if (!UmbraRuntime.LocalPlayerBody || __instance.target != UmbraRuntime.LocalPlayerBody.gameObject) return;
             ModernAimbot.Update();
         }
         /// <summary>Removes only this runtime's patches on unload.</summary>

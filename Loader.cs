@@ -12,7 +12,7 @@ namespace UmbraMenu
         private static int request;
         private static bool subscribed;
         private static GameObject root;
-        private static UmbraMenu runtime;
+        private static UmbraRuntime runtime;
         private static int attempts;
         private static float retryAt;
         public static string Status { get; private set; } = "Not loaded";
@@ -60,7 +60,7 @@ namespace UmbraMenu
                     EnsureDependencies();
                     root = new GameObject("Umbra Menu");
                     UnityEngine.Object.DontDestroyOnLoad(root);
-                    runtime = root.AddComponent<UmbraMenu>();
+                    runtime = root.AddComponent<UmbraRuntime>();
                     runtime.Initialize();
                     Status = "Ready"; Finish();
                 }

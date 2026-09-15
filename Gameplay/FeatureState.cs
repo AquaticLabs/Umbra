@@ -45,7 +45,7 @@ namespace UmbraMenu.State
         /// <summary>Resets recharge time for the active equipment slot while preserving equipment and charges.</summary>
         public static void NoEquipmentCooldown()
         {
-            var inventory = UmbraMenu.LocalPlayerInv;
+            var inventory = UmbraRuntime.LocalPlayerInv;
             uint slot = (uint)inventory.activeEquipmentSlot;
             EquipmentState equipment = inventory.GetEquipment(slot, 0);
             if (equipment.chargeFinishTime != Run.FixedTimeStamp.zero)

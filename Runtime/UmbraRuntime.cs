@@ -7,7 +7,7 @@ namespace UmbraMenu
 {
     /// <summary>Small runtime coordinator. Loader owns creation; independent services own gameplay and persistence.</summary>
     [DefaultExecutionOrder(-10000)]
-    public sealed class UmbraMenu : MonoBehaviour
+    public sealed class UmbraRuntime : MonoBehaviour
     {
         public const string NAME = "UMBRA", VERSION = "2.4.0";
         public bool IsReady { get; private set; }
@@ -32,7 +32,7 @@ namespace UmbraMenu
             VisualSettings.Load();
             KeyBindings.Initialize();
             preferencesLoaded = true;
-            ModernMenu.Initialize();
+            MenuController.Initialize();
             GameHooks.Install();
             if (!GameHooks.Installed) throw new InvalidOperationException("Required input/camera/movement hooks could not be installed. See Player.log.");
             currentScene = SceneManager.GetActiveScene();
@@ -48,14 +48,15 @@ namespace UmbraMenu
             if (!IsReady || stopped) return;
             RuntimeContext.Refresh();
             HandleInput(); MenuInput.Update();
+            VisualSettings.Tick(); KeyBindings.Tick();
             MovementController.Update(); GodModes.Update(); StatOverrides.Update(LocalPlayerBody);
-            if (characterCollected && ModernMenu.HasHost)
+            if (characterCollected && MenuController.HasHost)
             {
                 if (State.Player.SkillToggle && LocalSkills) LocalSkills.ApplyAmmoPack();
                 if (State.Items.noEquipmentCD && LocalPlayerInv) State.Items.NoEquipmentCooldown();
             }
             MiscFeatures.Update(); SpawnCatalog.Update(); EspRenderer.Update();
-            VisualSettings.Tick(); KeyBindings.Tick(); RailgunPerfectReload.Update();
+            RailgunPerfectReload.Update();
         }
 
         /// <summary>Keeps the menu cursor usable; camera and flight changes run at their native hook boundaries.</summary>
@@ -63,7 +64,7 @@ namespace UmbraMenu
         {
             if (!IsReady) return;
             if (!characterCollected || !ModernAimbot.Enabled) ModernAimbot.ClearTarget();
-            if (ModernMenu.IsOpen) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
+            if (MenuController.IsOpen) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
 
         }
 
@@ -72,17 +73,17 @@ namespace UmbraMenu
         {
             if (!IsReady) return;
             int depth = GUI.depth;
-            try { GUI.depth = -50; EspRenderer.Draw(); MiscFeatures.Draw(); ModernMenu.Draw(); }
+            try { GUI.depth = -50; EspRenderer.Draw(); MiscFeatures.Draw(); MenuController.Draw(); }
             finally { GUI.depth = depth; }
         }
 
         /// <summary>Routes reserved keys and exclusive rebinding before ordinary gameplay shortcuts.</summary>
         private static void HandleInput()
         {
-            chatOpen = Utility.CursorIsVisible();
+            chatOpen = GameInput.CursorIsVisible();
             if (KeyBindings.IsCapturing) { KeyBindings.Update(); return; }
-            if (Input.GetKeyDown(KeyCode.Insert)) { ModernMenu.SetOpen(!ModernMenu.IsOpen); return; }
-            if (Input.GetKeyDown(KeyCode.End)) { ModernMenu.DisableGameplayMods(); return; }
+            if (Input.GetKeyDown(KeyCode.Insert)) { MenuController.SetOpen(!MenuController.IsOpen); return; }
+            if (Input.GetKeyDown(KeyCode.End)) { MenuActions.DisableGameplayMods(); return; }
             KeyBindings.Update();
         }
 
@@ -94,6 +95,7 @@ namespace UmbraMenu
             Cleanup("scene stats", StatOverrides.Restore);
             Cleanup("scene god mode", GodModes.Restore);
             ModernAimbot.ClearTarget(); EspRenderer.Clear(); MiscFeatures.Clear();
+            RailgunPerfectReload.Clear();
             RuntimeContext.Clear();
         }
 
@@ -113,8 +115,8 @@ namespace UmbraMenu
             Cleanup("movement", MovementController.Restore);
             Cleanup("god mode", GodModes.Restore);
             Cleanup("statistics", StatOverrides.Restore);
-            Cleanup("gameplay toggles", ModernMenu.DisableGameplayMods);
-            Cleanup("menu", ModernMenu.Dispose);
+            Cleanup("gameplay toggles", MenuActions.DisableGameplayMods);
+            Cleanup("menu", MenuController.Dispose);
             Cleanup("hooks", GameHooks.Uninstall);
             Cleanup("pointer shield", MenuInput.Dispose);
             Cleanup("spawn assets", SpawnCatalog.Dispose);

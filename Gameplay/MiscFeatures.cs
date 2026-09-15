@@ -23,8 +23,8 @@ namespace UmbraMenu
             frameTime = Mathf.Lerp(frameTime <= 0 ? Time.unscaledDeltaTime : frameTime, Time.unscaledDeltaTime, 0.05f);
             if (Time.unscaledTime < refreshAt) return;
             refreshAt = Time.unscaledTime + 0.25f;
-            string ping = ModernMenu.HasHost ? "Host / 0 ms" : "Offline";
-            if (!ModernMenu.HasHost && NetworkClient.allClients.Count > 0 && NetworkClient.allClients[0].isConnected)
+            string ping = MenuController.HasHost ? "Host / 0 ms" : "Offline";
+            if (!MenuController.HasHost && NetworkClient.allClients.Count > 0 && NetworkClient.allClients[0].isConnected)
                 ping = NetworkClient.allClients[0].GetRTT() + " ms";
             performance = Mathf.RoundToInt(1f / Mathf.Max(0.0001f, frameTime)) + " FPS  /  " + ping;
         }
@@ -36,7 +36,7 @@ namespace UmbraMenu
             float y = 18;
             if (PerformanceHud) Row(performance, ref y);
             if (RunTimer && Run.instance) Row("Run " + TimeSpan.FromSeconds(Math.Max(0, Run.instance.GetRunStopwatch())).ToString(@"hh\:mm\:ss"), ref y);
-            if (Coordinates && UmbraMenu.LocalPlayerBody) Row("Position " + UmbraMenu.LocalPlayerBody.footPosition.ToString("F1"), ref y);
+            if (Coordinates && UmbraRuntime.LocalPlayerBody) Row("Position " + UmbraRuntime.LocalPlayerBody.footPosition.ToString("F1"), ref y);
         }
         /// <summary>Places a right-aligned line with a dark readable backdrop.</summary>
         private static void Row(string text, ref float y)
@@ -49,19 +49,19 @@ namespace UmbraMenu
         /// <summary>Saves a temporary position that cannot be reused after a scene change.</summary>
         public static void Bookmark()
         {
-            if (!UmbraMenu.characterCollected) throw new InvalidOperationException("A living character is required.");
-            bookmark = UmbraMenu.LocalPlayerBody.footPosition;
-            bookmarkScene = UmbraMenu.currentScene.handle;
+            if (!UmbraRuntime.characterCollected) throw new InvalidOperationException("A living character is required.");
+            bookmark = UmbraRuntime.LocalPlayerBody.footPosition;
+            bookmarkScene = UmbraRuntime.currentScene.handle;
         }
         /// <summary>Returns the host to its bookmark in the same stage only.</summary>
         public static void Return()
         {
-            if (!ModernMenu.HasHost || !UmbraMenu.characterCollected) throw new InvalidOperationException("A living host character is required.");
-            if (bookmarkScene < 0 || bookmarkScene != UmbraMenu.currentScene.handle) throw new InvalidOperationException("Save a position in this stage first.");
+            if (!MenuController.HasHost || !UmbraRuntime.characterCollected) throw new InvalidOperationException("A living host character is required.");
+            if (bookmarkScene < 0 || bookmarkScene != UmbraRuntime.currentScene.handle) throw new InvalidOperationException("Save a position in this stage first.");
             TeleportHelper.TeleportBody(new TeleportHelper.TeleportBodyArgs
             {
-                body = UmbraMenu.LocalPlayerBody, targetPosition = bookmark,
-                targetRotation = UmbraMenu.LocalPlayerBody.transform.rotation,
+                body = UmbraRuntime.LocalPlayerBody, targetPosition = bookmark,
+                targetRotation = UmbraRuntime.LocalPlayerBody.transform.rotation,
                 forceOutOfVehicle = true, teleportMinions = true, resetStateMachines = true
             });
         }

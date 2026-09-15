@@ -51,9 +51,6 @@ namespace UmbraMenu
             Fill(new Rect(r.xMax - cornerWidth, r.yMax - v, cornerWidth, Mathf.Max(0, v - cornerHeight)), color);
         }
 
-        /// <summary>Compatibility entry point for older modules.</summary>
-        public static void DrawBox(float x, float y, float w, float h, Color color) { Box(new Rect(x, y, w, h), color, 1); }
-
         /// <summary>Draws a rotated line with correct vertical/zero-length handling and matrix restoration.</summary>
         public static void DrawLine(Vector2 start, Vector2 end, Color color, float thickness = 1f)
         {

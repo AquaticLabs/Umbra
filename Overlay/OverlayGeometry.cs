@@ -11,7 +11,7 @@ namespace UmbraMenu
         /// <summary>Selects the local player's camera, with main camera fallback during transitions.</summary>
         public static Camera GetCamera()
         {
-            var body = UmbraMenu.LocalPlayerBody;
+            var body = UmbraRuntime.LocalPlayerBody;
             foreach (var rig in CameraRigController.readOnlyInstancesList)
                 if (rig && body && rig.target == body.gameObject && rig.sceneCam) return rig.sceneCam;
             return Camera.main;

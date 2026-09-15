@@ -36,8 +36,8 @@ namespace UmbraMenu
         public static void Update()
         {
             ClearTarget();
-            var body = UmbraMenu.LocalPlayerBody;
-            if (!Enabled || !body || !UmbraMenu.characterCollected || MenuInput.Capturing || KeyBindings.IsCapturing || UmbraMenu.chatOpen || Utility.CursorIsVisible()) return;
+            var body = UmbraRuntime.LocalPlayerBody;
+            if (!Enabled || !body || !UmbraRuntime.characterCollected || MenuInput.Capturing || KeyBindings.IsCapturing || UmbraRuntime.chatOpen || GameInput.CursorIsVisible()) return;
             var activation = KeyBindings.Find("Aim activation");
             if (HoldActivation && (activation == null || activation.Key == KeyCode.None || !Input.GetKey(activation.Key))) return;
             var input = body.inputBank;
@@ -66,7 +66,7 @@ namespace UmbraMenu
             Vector3 desired = (point - camera.transform.position).normalized;
             float blend = 1f - Mathf.Exp(-Smoothing * Time.unscaledDeltaTime);
             Vector3 cameraDirection = mode == 1 ? Vector3.Slerp(camera.transform.forward, desired, blend).normalized : desired;
-            var controller = UmbraMenu.LocalNetworkUser ? UmbraMenu.LocalNetworkUser.masterController : null;
+            var controller = UmbraRuntime.LocalNetworkUser ? UmbraRuntime.LocalNetworkUser.masterController : null;
             if (controller) controller.RedirectCamera(Quaternion.LookRotation(cameraDirection).eulerAngles);
             input.aimDirection = mode == 1 ? cameraDirection : (point - input.aimOrigin).normalized;
         }

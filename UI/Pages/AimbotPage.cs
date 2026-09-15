@@ -1,11 +1,24 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using RoR2;
 using UnityEngine;
+using static UmbraMenu.MenuController;
+using static UmbraMenu.MenuWidgets;
+using static UmbraMenu.MenuTheme;
+using static UmbraMenu.MenuActions;
 
 namespace UmbraMenu
 {
-    internal static partial class ModernMenu
+    /// <summary>Aimbot page; owns its local editing state and preserves the user's card layout.</summary>
+    internal sealed class AimbotPage : IMenuPage
     {
+        public string Title { get { return "Aimbot"; } }
+        public string Description { get { return "Activation, camera aiming, target rules and visual feedback."; } }
+
         /// <summary>Dedicated camera targeting page, with activation separate from the master toggle key.</summary>
-        private static void DrawAimbot(float width)
+        public void Build(float width)
         {
             AddCard(0, "ACTIVATION & CAMERA", c =>
             {
@@ -43,3 +56,4 @@ namespace UmbraMenu
         }
     }
 }
+

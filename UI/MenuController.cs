@@ -1,3 +1,5 @@
+using static UmbraMenu.MenuTheme;
+using static UmbraMenu.MenuActions;
 using System;
 using System.Collections.Generic;
 using RoR2;
@@ -6,23 +8,26 @@ using UnityEngine;
 namespace UmbraMenu
 {
     /// <summary>Measured two-column shell. Pages describe cards; controls measure before drawing.</summary>
-    internal static partial class ModernMenu
+    internal static class MenuController
     {
-        private static readonly string[] Pages = { "Player", "Aimbot", "Visuals", "Items", "World", "Spawn", "Lobby", "Misc" };
+        private static IMenuPage[] Pages = CreatePages();
+        internal static ItemService.Entry SelectedItem;
+        /// <summary>Explicit page registry; each instance owns its fields and selection state.</summary>
+        private static IMenuPage[] CreatePages() { return new IMenuPage[] { new PlayerPage(), new AimbotPage(), new VisualsPage(), new ItemsPage(), new WorldPage(), new SpawnPage(), new LobbyPage(), new MiscPage() }; }
         private static Rect window = new Rect(40f, 40f, 950f, 750f);
         internal static bool HasHost { get { return UnityEngine.Networking.NetworkServer.active; } }
         internal static Rect WindowRect { get { return window; } }
         private static Vector2 pageScroll;
         private static int page;
-        private static string status = "Ready", moneyValue = "1000", coinValue = "10", experienceValue = "1000";
+        private static string status = "Ready";
         private static float statusUntil;
-        private static EspCategory selectedCategory;
-        private static string itemQuery = "";
-        private static ItemDef selectedItem;
-        private static string lastItemQuery = null;
-        private static readonly List<ItemDef> itemMatches = new List<ItemDef>();
+
+
+
+
+
         private static readonly List<CardDefinition> cards = new List<CardDefinition>();
-        private static VisualPreferences Prefs { get { return VisualSettings.Current; } }
+        internal static VisualPreferences Prefs { get { return VisualSettings.Current; } }
         public static bool IsOpen { get; private set; }
         private static bool cursorVisible;
         private static CursorLockMode cursorLock;
@@ -33,8 +38,8 @@ namespace UmbraMenu
         public static void Initialize()
         {
             window.x = Prefs.WindowX; window.y = Prefs.WindowY;
-            selectedItem = null; itemMatches.Clear(); lastItemQuery = null;
-            catalogSelection = null; spawnSelection = null; giftRecipient = null;
+            Pages = CreatePages(); SelectedItem = null; page = 0; pageScroll = Vector2.zero;
+            status = "Ready"; statusUntil = 0;
         }
 
         /// <summary>Opens/closes the shell, preserving cursor state and saving visual preferences on close.</summary>
@@ -81,8 +86,8 @@ namespace UmbraMenu
             Panel(new Rect(1, 1, window.width - 2, 64), headerStyle, 0.18f);
             Panel(new Rect(1, 65, sidebarWidth - 1, window.height - 66), sidebarStyle, 0.16f);
             GUI.Label(new Rect(22, 12, 180, 28), "UMBRA", titleStyle);
-            GUI.Label(new Rect(23, 40, 190, 20), "TRIDENT / " + UmbraMenu.VERSION, subtitleStyle);
-            string state = UmbraMenu.characterCollected ? "IN RUN" : "NO CHARACTER";
+            GUI.Label(new Rect(23, 40, 190, 20), "TRIDENT / " + UmbraRuntime.VERSION, subtitleStyle);
+            string state = UmbraRuntime.characterCollected ? "IN RUN" : "NO CHARACTER";
             GUI.Label(new Rect(window.width - 170, 18, 140, 28), state, badgeStyle);
             if (HasHost) GUI.Label(new Rect(window.width - 260, 18, 90, 28), "HOST", badgeStyle);
             float notice = HasHost ? 0 : 38;
@@ -95,21 +100,11 @@ namespace UmbraMenu
             DrawNavigation(sidebarWidth);
             float contentX = sidebarWidth + 20f;
             float availableWidth = window.width - contentX - 20f;
-            GUI.Label(new Rect(contentX, 81 + notice, availableWidth, 30), Pages[page], sectionStyle);
-            GUI.Label(new Rect(contentX, 116 + notice, availableWidth, 36), PageDescription(page), mutedStyle);
+            GUI.Label(new Rect(contentX, 81 + notice, availableWidth, 30), Pages[page].Title, sectionStyle);
+            GUI.Label(new Rect(contentX, 116 + notice, availableWidth, 36), Pages[page].Description, mutedStyle);
 
             cards.Clear();
-            switch (page)
-            {
-                case 0: DrawPlayer(availableWidth); break;
-                case 1: DrawAimbot(availableWidth); break;
-                case 2: DrawVisuals(availableWidth); break;
-                case 3: DrawItems(availableWidth); break;
-                case 4: DrawWorld(availableWidth); break;
-                case 5: DrawSpawn(availableWidth); break;
-                case 6: DrawLobby(availableWidth); break;
-                default: DrawMisc(availableWidth); break;
-            }
+            Pages[page].Build(availableWidth);
             Rect viewport = new Rect(contentX, 158 + notice, availableWidth, Mathf.Max(30f, window.height - 206f - notice));
             float contentWidth = Mathf.Max(130, viewport.width - 18f);
             float totalHeight = LayoutCards(contentWidth);
@@ -132,14 +127,14 @@ namespace UmbraMenu
             for (int i = 0; i < Pages.Length; i++)
             {
                 Rect row = new Rect(10, 88 + (HasHost ? 0 : 38) + i * rowHeight, width - 20, rowHeight - 5);
-                if (GUI.Button(row, Pages[i], i == page ? navActiveStyle : navStyle))
+                if (GUI.Button(row, Pages[i].Title, i == page ? navActiveStyle : navStyle))
                 { page = i; pageScroll = Vector2.zero; GUI.FocusControl(null); }
                 if (i == page) ESPHelper.Fill(new Rect(row.x, row.y + 8, 2, row.height - 16), Accent);
             }
         }
 
         /// <summary>Registers a card; no layout height is guessed in page definitions.</summary>
-        private static void AddCard(int column, string title, Action<CardCursor> content, bool hostOnly = false)
+        internal static void AddCard(int column, string title, Action<CardCursor> content, bool hostOnly = false)
         { cards.Add(new CardDefinition { Column = column, Title = title, Content = content, HostOnly = hostOnly }); }
 
         /// <summary>Measures wrapped text and every control, then flows each column without clipping.</summary>
@@ -175,42 +170,24 @@ namespace UmbraMenu
             SetOpen(false);
             DisposeStyles();
             cards.Clear();
+            SelectedItem = null;
+            Pages = Array.Empty<IMenuPage>();
         }
 
         #endregion
 
-        /// <summary>Card metadata shared by measurement and paint passes.</summary>
-        private sealed class CardDefinition
+        /// <summary>Displays a short status message in the reserved footer.</summary>
+        internal static void Toast(string message)
         {
-            public int Column;
-            public string Title;
-            public Action<CardCursor> Content;
-            public Rect Rect;
-            public bool HostOnly;
+            status = message;
+            statusUntil = Time.unscaledTime + 3.5f;
         }
-
-        /// <summary>Tracks vertical space consistently in measurement and interactive passes.</summary>
-        private sealed class CardCursor
+        /// <summary>Centers the current window inside the display.</summary>
+        internal static void CenterWindow()
         {
-            public readonly float Width;
-            public readonly bool Measuring;
-            public float Y;
-            /// <summary>Starts a card at its actual usable width in either pass.</summary>
-            public CardCursor(float width, bool measuring) { Width = width; Measuring = measuring; }
-            /// <summary>Consumes a control's measured height.</summary>
-            public void Advance(float value) { Y += value; }
-            /// <summary>Adds deliberate whitespace, identically in both passes.</summary>
-            public void Space(float value) { Y += value; }
-        }
-
-        /// <summary>Describes a click action and optional destructive visual emphasis.</summary>
-        private sealed class ButtonAction
-        {
-            public readonly string Label;
-            public readonly Action Action;
-            public readonly bool Danger;
-            /// <summary>Binds a caption to a validated click action.</summary>
-            public ButtonAction(string label, Action action, bool danger = false) { Label = label; Action = action; Danger = danger; }
+            window.x = (Screen.width - window.width) * 0.5f;
+            window.y = (Screen.height - window.height) * 0.5f;
+            Toast("Window centered");
         }
     }
 }

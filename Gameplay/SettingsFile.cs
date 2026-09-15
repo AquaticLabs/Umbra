@@ -17,7 +17,8 @@ namespace UmbraMenu
                 try
                 {
                     string text = File.ReadAllText(candidate, Encoding.UTF8);
-                    if (string.IsNullOrWhiteSpace(text) || !text.TrimStart().StartsWith("{", StringComparison.Ordinal)) throw new InvalidDataException("Expected a JSON object.");
+                    if (string.IsNullOrWhiteSpace(text) || !text.TrimStart().StartsWith("{", StringComparison.Ordinal) || !text.TrimEnd().EndsWith("}", StringComparison.Ordinal))
+                        throw new InvalidDataException("Expected a complete JSON object.");
                     accept(text);
                     if (candidate != path) warning = "Recovered settings from backup: " + System.IO.Path.GetFileName(path);
                     return true;

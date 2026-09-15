@@ -1,3 +1,6 @@
+using static UmbraMenu.MenuController;
+using static UmbraMenu.MenuTheme;
+using static UmbraMenu.MenuActions;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -8,12 +11,13 @@ using UnityEngine;
 
 namespace UmbraMenu
 {
-    internal static partial class ModernMenu
+    /// <summary>Reusable, measured UI controls. Pages own values; this class owns neither window nor gameplay state.</summary>
+    internal static class MenuWidgets
     {
         #region Measured controls
 
         /// <summary>Draws a label/value row with ellipsis-safe widths.</summary>
-        private static void DrawReadout(CardCursor c, string label, string value)
+        internal static void DrawReadout(CardCursor c, string label, string value)
         {
             if (!c.Measuring)
             {
@@ -24,7 +28,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Measures and draws a text field; narrow cards stack its label above the field.</summary>
-        private static void DrawInput(CardCursor c, string label, ref string value)
+        internal static void DrawInput(CardCursor c, string label, ref string value)
         {
             bool stacked = c.Width < 290;
             if (!c.Measuring)
@@ -38,7 +42,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Draws a switch and measures its wrapped hint instead of reserving a fixed line count.</summary>
-        private static void DrawToggle(CardCursor c, string label, bool current, Action<bool> setter, string hint)
+        internal static void DrawToggle(CardCursor c, string label, bool current, Action<bool> setter, string hint)
         {
             var binding = KeyBindings.Find(label);
             float reserved = binding == null ? 62 : 132;
@@ -58,14 +62,14 @@ namespace UmbraMenu
         }
 
         /// <summary>Edits a hold key or action binding independently from its enabled state.</summary>
-        private static void DrawBinding(CardCursor c, string label, string key)
+        internal static void DrawBinding(CardCursor c, string label, string key)
         {
             var binding = KeyBindings.Find(key);
             DrawCycle(c, label, KeyBindings.Caption(binding), () => KeyBindings.BeginCapture(binding));
         }
 
         /// <summary>Cycles discrete options using an explicit labeled button.</summary>
-        private static void DrawCycle(CardCursor c, string label, string value, Action action)
+        internal static void DrawCycle(CardCursor c, string label, string value, Action action)
         {
             if (!c.Measuring)
             {
@@ -76,7 +80,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Draws a slider with stable spacing and an always visible current value.</summary>
-        private static void DrawSlider(CardCursor c, string label, ref float value, float min, float max, string format)
+        internal static void DrawSlider(CardCursor c, string label, ref float value, float min, float max, string format)
         {
             if (!c.Measuring)
             {
@@ -88,7 +92,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Rounds integer slider values only during the interactive pass.</summary>
-        private static void DrawSlider(CardCursor c, string label, ref int value, int min, int max)
+        internal static void DrawSlider(CardCursor c, string label, ref int value, int min, int max)
         {
             float temporary = value;
             DrawSlider(c, label, ref temporary, min, max, "0");
@@ -96,7 +100,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Measures the actual wrapped height of explanatory text.</summary>
-        private static void DrawParagraph(CardCursor c, string value)
+        internal static void DrawParagraph(CardCursor c, string value)
         {
             float height = Mathf.Max(20, mutedStyle.CalcHeight(new GUIContent(value), c.Width));
             if (!c.Measuring) GUI.Label(new Rect(0, c.Y, c.Width, height), value, mutedStyle);
@@ -104,7 +108,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Wraps action buttons to additional rows when the card is narrow.</summary>
-        private static void DrawButtonRow(CardCursor c, params ButtonAction[] actions)
+        internal static void DrawButtonRow(CardCursor c, params ButtonAction[] actions)
         {
             int perRow = Mathf.Max(1, Mathf.Min(actions.Length, Mathf.FloorToInt((c.Width + 8) / 104f)));
             float width = (c.Width - 8 * (perRow - 1)) / perRow;
@@ -118,7 +122,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Edits all RGBA channels with a color swatch and hexadecimal readout.</summary>
-        private static void DrawColor(CardCursor c, ref Color color)
+        internal static void DrawColor(CardCursor c, ref Color color)
         {
             if (!c.Measuring)
             {
@@ -134,7 +138,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Draws a compact color channel row and its 0–255 numeric value.</summary>
-        private static void DrawColorChannel(CardCursor c, string channel, ref float value)
+        internal static void DrawColorChannel(CardCursor c, string channel, ref float value)
         {
             if (!c.Measuring)
             {
@@ -145,24 +149,10 @@ namespace UmbraMenu
             c.Advance(29);
         }
 
-        /// <summary>Offers direct access to every category without cycling through hidden controls.</summary>
-        private static void DrawCategoryPicker(CardCursor c)
-        {
-            var categories = (EspCategory[])Enum.GetValues(typeof(EspCategory));
-            int columns = c.Width >= 310 ? 3 : 2;
-            float width = (c.Width - (columns - 1) * 6) / columns;
-            for (int i = 0; i < categories.Length; i++)
-            {
-                var category = categories[i];
-                if (!c.Measuring && GUI.Button(new Rect((i % columns) * (width + 6), c.Y + (i / columns) * 33, width, 28),
-                    SplitName(category.ToString()), category == selectedCategory ? navActiveStyle : buttonStyle)) selectedCategory = category;
-            }
-            c.Advance(Mathf.CeilToInt(categories.Length / (float)columns) * 33 + 12);
-            DrawReadout(c, "Editing", SplitName(selectedCategory.ToString()));
-        }
+
 
         /// <summary>Edits one category/item and renders a preview through the same box primitive used in game.</summary>
-        private static void DrawEspStyle(CardCursor c, EspStyle style)
+        internal static void DrawEspStyle(CardCursor c, EspStyle style)
         {
             DrawToggle(c, "Visible", style.Enabled, v => style.Enabled = v, null);
             DrawToggle(c, "Draw boxes", style.Boxes, v => style.Boxes = v, null);
@@ -178,44 +168,31 @@ namespace UmbraMenu
             c.Advance(60);
         }
 
-        /// <summary>Caches six matching catalog entries; selecting a result creates an independent override.</summary>
-        private static void DrawItemMatches(CardCursor c)
-        {
-            if (c.Measuring && lastItemQuery != itemQuery)
-            {
-                lastItemQuery = itemQuery;
-                itemMatches.Clear();
-                if (!string.IsNullOrWhiteSpace(itemQuery))
-                    foreach (var index in ItemCatalog.allItems)
-                    {
-                        var item = ItemCatalog.GetItemDef(index);
-                        if (!item) continue;
-                        if (item.name.IndexOf(itemQuery, StringComparison.OrdinalIgnoreCase) < 0 &&
-                            Language.GetString(item.nameToken).IndexOf(itemQuery, StringComparison.OrdinalIgnoreCase) < 0) continue;
-                        itemMatches.Add(item);
-                        if (itemMatches.Count == 6) break;
-                    }
-            }
-            foreach (var item in itemMatches)
-                DrawButtonRow(c, new ButtonAction(Language.GetString(item.nameToken), () =>
-                {
-                    VisualSettings.OverrideItem(item.name, EspRenderer.ItemCategory(item));
-                    selectedItem = item;
-                }));
-            if (itemMatches.Count == 0) DrawParagraph(c, string.IsNullOrWhiteSpace(itemQuery) ? "Search by display name or catalog ID." : "No matching items loaded.");
-        }
+
 
         /// <summary>Saves/restores all visual settings together; gameplay toggles are excluded.</summary>
-        private static void DrawPreferenceActions(CardCursor c)
+        internal static void DrawPreferenceActions(CardCursor c)
         {
             DrawButtonRow(c, new ButtonAction("Save visuals", () => { VisualSettings.Save(); Toast("Visual preferences saved"); }),
-                new ButtonAction("Reset visuals", () => { VisualSettings.Current = VisualSettings.CreateDefaults(); selectedItem = null; Toast("Visual defaults restored"); }));
+                new ButtonAction("Reset visuals", () => { VisualSettings.Current = VisualSettings.CreateDefaults(); Toast("Visual defaults restored"); }));
             DrawParagraph(c, "Visual preferences also save when you close Umbra.");
         }
 
         /// <summary>Converts stable enum keys into readable labels.</summary>
-        private static string SplitName(string value) { return System.Text.RegularExpressions.Regex.Replace(value, "(?<=[a-z])(?=[A-Z])", " "); }
+        internal static string SplitName(string value) { return System.Text.RegularExpressions.Regex.Replace(value, "(?<=[a-z])(?=[A-Z])", " "); }
 
+        /// <summary>Draws compact wrapping category chips, measuring the same rows in both passes.</summary>
+        internal static void DrawChips(CardCursor c, string[] choices, string selected, Action<string> select)
+        {
+            int columns = Mathf.Max(1, Mathf.FloorToInt((c.Width + 6) / 96));
+            float width = (c.Width - (columns - 1) * 6) / columns;
+            for (int i = 0; i < choices.Length; i++)
+            {
+                string choice = choices[i];
+                if (!c.Measuring && GUI.Button(new Rect((i % columns) * (width + 6), c.Y + (i / columns) * 34, width, 28), choice, selected == choice ? navActiveStyle : buttonStyle)) select(choice);
+            }
+            c.Advance(Mathf.CeilToInt(choices.Length / (float)columns) * 34 + 8);
+        }
         #endregion
     }
 }

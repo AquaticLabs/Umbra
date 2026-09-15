@@ -1,4 +1,4 @@
-# Umbra 2.3.0 — Trident proof
+# Umbra 2.4.0 — Trident proof
 
 A minimal injected Risk of Rain 2 menu with a deep-blue, Trident-inspired Unity IMGUI interface. It is still **Umbra**; it does not embed Dear ImGui or require the Trident application to render. Use in solo/private sessions with everyone informed.
 
@@ -22,11 +22,15 @@ A minimal injected Risk of Rain 2 menu with a deep-blue, Trident-inspired Unity 
 - ESP projects live world-space mesh bounds, including near-plane clipping, instead of estimating size from distance. Outline thickness remains in screen pixels.
 - **Visuals → Category style** contains 25 categories with independent RGBA sliders, thickness, visibility, boxes, and labels. **Item overrides** adds individual item styles by display name or catalog ID. Equipment uses its category color.
 - FOV and crosshair each have RGBA and thickness controls. Visual preferences save when the menu closes or **Save visuals** is selected.
-- The maintained runtime is separated into documented UI, gameplay, and overlay modules. Legacy sources are retained as reference but are excluded from compilation.
+- Each menu page is an independent class under `UI/Pages`. `MenuController` owns the window; `UmbraRuntime` owns the game lifecycle. Obsolete runtime sources and unused resources/dependencies have been removed.
+- Trident loads are queued onto the game's main loop and wait for content readiness. Repeated loads are idempotent; failed initialization cleans up before bounded retries.
+- Flight overrides native motor velocity after gravity and hovers while Umbra is open. Railgunner perfect reload caches state machines per body, supports rebinding, and respects disable-all.
+- Spawn cards use native monster portraits or interactable inspect sprites where available, with a category fallback for assets without artwork.
+- Settings use managed JSON for explicit key and palette-list serialization, atomic replacement, backup recovery, and debounced autosaving.
 
 ## Included pages
 
-**Player:** give/set/zero money; give/set/remove lunar coins; XP, heal, respawn; god-mode selection; reversible stat overrides and infinite skills.
+**Player:** give/set/zero money; give/set/remove lunar coins; XP, heal, respawn; god-mode selection; movement, Railgunner perfect reload, reversible stat overrides and infinite skills.
 
 **Aimbot:** activation, camera mode/smoothing, target rules, FOV styling and target line.
 
@@ -38,9 +42,9 @@ A minimal injected Risk of Rain 2 menu with a deep-blue, Trident-inspired Unity 
 
 **Spawn:** paginated catalog of exact monster/boss/chest/shrine/drone/printer/portal/other cards, team selection and placement range.
 
-**Lobby:** recipient gifts, session diagnostics and run-seed copying; difficulty remains read-only.
+**Lobby:** recipient gifts and revival, session diagnostics and run-seed copying; difficulty remains read-only.
 
-**Misc:** sprint/flight/jump pack, cooldowns, telemetry, position bookmark, page bindings, disable-all, unload and window styling.
+**Misc:** cooldowns, telemetry, position bookmark, page bindings, disable-all, unload and window styling.
 
 Aim modes are **Direct**, **Smooth**, and **Fire only**. Fire only redirects the aim vector while primary fire is held; it is not packet-level pseudo-silent aiming. FOV is a camera-centered **half-angle** in degrees. Smoothing affects Smooth mode only.
 
@@ -64,15 +68,17 @@ Output: `bin\Release\UmbraMenu.dll` (x64). References come from the installed ga
 
 Use your existing Mono injector with namespace `UmbraMenu`, class `Loader`, method `Load`. `Loader.Unload` releases the runtime. Restart the game when replacing an already loaded assembly with a new build; Mono may retain the previous assembly in memory.
 
+Early injection is supported once Mono and the RoR2 managed assemblies are available, including before the main menu. `Loader.Status` reports waiting, ready, or initialization failure. Loading never waits synchronously on the injector thread.
+
 - **Insert:** open/close Umbra. Drag its header to move it.
 - **End:** disable gameplay modifiers.
 - **Z:** open Player. **B:** open World. **I:** open Items. **C:** toggle flight (editable).
 - Aimbot activation defaults to holding **right mouse**, after enabling its master toggle. Switch Activation to Constant if desired.
-- During flight, jump ascends and **X** descends.
+- During flight, jump ascends and **X** descends; opening Umbra pauses flight input and holds position.
 
 Gameplay toggle shortcuts are suppressed while the menu or game cursor is active. Click a toggle's key button to rebind it. Server-authoritative actions require the host; stat and cooldown modifiers only apply on the host. Lunar coins affect the persistent game profile and are not undone by disable-all or unloading. Back up that profile before editing currency. Money, XP, spawns, stage actions, and other one-shot operations are also not reversible via disable-all.
 
-Visual settings: `%APPDATA%\UmbraMenu\visuals.json`. Key assignments: `%APPDATA%\UmbraMenu\keys.json`. Gameplay mutations are never enabled by loading preferences. Enemy/interactable master switches and Misc telemetry choices are session-only.
+Visual settings: `%APPDATA%\UmbraMenu\visuals.json`. Key assignments: `%APPDATA%\UmbraMenu\keys.json`. Gameplay mutations are never enabled by loading preferences. Window position/style, ESP switches and colors, FOV/target-line styling, and Misc telemetry choices persist. Changes autosave, with a final flush on close/focus loss/unload. Failed writes are shown in the footer and retried. Previous versions use `.bak`; unreadable primary files are preserved as `.invalid-*` before replacement. A malformed or empty key file cannot recover assignments it never stored, but a valid backup is tried first.
 
 ## Code and validation
 

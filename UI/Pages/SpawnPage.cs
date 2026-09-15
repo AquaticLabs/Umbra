@@ -1,17 +1,28 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using RoR2;
 using UnityEngine;
+using static UmbraMenu.MenuController;
+using static UmbraMenu.MenuWidgets;
+using static UmbraMenu.MenuTheme;
+using static UmbraMenu.MenuActions;
 
 namespace UmbraMenu
 {
-    internal static partial class ModernMenu
+    /// <summary>Spawn page; owns its local editing state and preserves the user's card layout.</summary>
+    internal sealed class SpawnPage : IMenuPage
     {
-        private static readonly string[] spawnGroups = { "All", "Common", "Boss", "Chest", "Shrine", "Drone", "Printer", "Portal", "Other" };
-        private static string spawnQuery = "", spawnGroup = "All";
-        private static int spawnPage;
-        private static SpawnCatalog.Entry spawnSelection;
+        public string Title { get { return "Spawn"; } }
+        public string Description { get { return "Browse categorized spawn cards and place the exact selected asset."; } }
+
+        private readonly string[] spawnGroups = { "All", "Common", "Boss", "Chest", "Shrine", "Drone", "Printer", "Portal", "Other" };
+        private string spawnQuery = "", spawnGroup = "All";
+        private int spawnPage;
+        private SpawnCatalog.Entry spawnSelection;
         /// <summary>Offers exact, categorized spawn cards with search and pagination instead of ambiguous substring presets.</summary>
-        private static void DrawSpawn(float width)
+        public void Build(float width)
         {
             SpawnCatalog.Request();
             AddCard(0, "SPAWN CATALOG", c =>
@@ -43,7 +54,7 @@ namespace UmbraMenu
         }
 
         /// <summary>Preserves the catalog layout while adding native portraits/inspect sprites and a consistent fallback.</summary>
-        private static void DrawSpawnRow(CardCursor c, SpawnCatalog.Entry entry)
+        private void DrawSpawnRow(CardCursor c, SpawnCatalog.Entry entry)
         {
             float height = Mathf.Max(46, labelStyle.CalcHeight(new GUIContent(entry.Name), c.Width - 58) + 12);
             if (!c.Measuring)
@@ -52,10 +63,10 @@ namespace UmbraMenu
                 Rect imageRect = new Rect(6, c.Y + 5, 34, 34);
                 if (entry.IconSprite)
                 {
-                    // Sprite.rect addresses only this icon when the texture is a shared atlas.
-                    var source = entry.IconSprite.rect;
+                    // Atlas UVs account for packing; Sprite.rect describes the un-packed source rectangle.
+                    var source = UnityEngine.Sprites.DataUtility.GetOuterUV(entry.IconSprite);
                     var texture = entry.IconSprite.texture;
-                    GUI.DrawTextureWithTexCoords(imageRect, texture, new Rect(source.x / texture.width, source.y / texture.height, source.width / texture.width, source.height / texture.height));
+                    GUI.DrawTextureWithTexCoords(imageRect, texture, new Rect(source.x, source.y, source.z - source.x, source.w - source.y));
                 }
                 else if (entry.Icon) GUI.DrawTexture(imageRect, entry.Icon, ScaleMode.ScaleToFit);
                 else GUI.Label(imageRect, entry.Category.Substring(0, 1), badgeStyle);
@@ -63,6 +74,5 @@ namespace UmbraMenu
             }
             c.Advance(height + 6);
         }
-
     }
 }

@@ -19,7 +19,7 @@ namespace UmbraMenu
         /// <summary>Refreshes object references periodically outside OnGUI; render bounds remain live each frame.</summary>
         public static void Update()
         {
-            if (!UmbraMenu.characterCollected) { if (entries.Count > 0) Clear(); return; }
+            if (!UmbraRuntime.characterCollected) { if (entries.Count > 0) Clear(); return; }
             if (Time.unscaledTime < nextRefresh) return;
             Refresh();
         }
@@ -30,7 +30,7 @@ namespace UmbraMenu
             nextRefresh = Time.unscaledTime + 1.5f;
             entries.Clear(); seen.Clear();
             foreach (var body in CharacterBody.readOnlyInstancesList)
-                if (body && body != UmbraMenu.LocalPlayerBody) Add(body, EspCategory.Enemy, body.GetDisplayName());
+                if (body && body != UmbraRuntime.LocalPlayerBody) Add(body, EspCategory.Enemy, body.GetDisplayName());
             foreach (var purchase in UnityEngine.Object.FindObjectsOfType<PurchaseInteraction>())
                 Add(purchase, Classify(purchase.gameObject.name), purchase.GetDisplayName());
             foreach (var barrel in UnityEngine.Object.FindObjectsOfType<BarrelInteraction>()) Add(barrel, EspCategory.Barrel, "Barrel");
@@ -69,7 +69,7 @@ namespace UmbraMenu
         /// <summary>Paints the full overlay once per repaint using the same local camera as aim selection.</summary>
         public static void Draw()
         {
-            if (Event.current.type != EventType.Repaint || !UmbraMenu.characterCollected) return;
+            if (Event.current.type != EventType.Repaint || !UmbraRuntime.characterCollected) return;
             Camera camera = OverlayGeometry.GetCamera();
             if (!camera) return;
             if (label == null) label = new GUIStyle { alignment = TextAnchor.UpperCenter, richText = false, wordWrap = false, clipping = TextClipping.Clip };
@@ -150,9 +150,9 @@ namespace UmbraMenu
             category = entry.Category;
             if (entry.Body)
             {
-                if (!entry.Body.healthComponent || !entry.Body.healthComponent.alive || !entry.Body.teamComponent || !UmbraMenu.LocalPlayerBody.teamComponent) return false;
+                if (!entry.Body.healthComponent || !entry.Body.healthComponent.alive || !entry.Body.teamComponent || !UmbraRuntime.LocalPlayerBody.teamComponent) return false;
                 TeamIndex team = entry.Body.teamComponent.teamIndex;
-                bool ally = team == UmbraMenu.LocalPlayerBody.teamComponent.teamIndex;
+                bool ally = team == UmbraRuntime.LocalPlayerBody.teamComponent.teamIndex;
                 if (team == TeamIndex.Neutral || team == TeamIndex.None) return false;
                 category = ally ? EspCategory.Ally : entry.Body.isBoss ? EspCategory.Boss : EspCategory.Enemy;
                 return ally ? Prefs.Allies : State.Render.renderMobs;

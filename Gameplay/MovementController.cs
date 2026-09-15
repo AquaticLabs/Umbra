@@ -15,18 +15,18 @@ namespace UmbraMenu
         /// <summary>Captures controls each frame. UI focus stops movement input, not flight's altitude hold.</summary>
         public static void Update()
         {
-            var current = UmbraMenu.LocalPlayerBody;
-            bool active = UmbraMenu.characterCollected && current && UmbraMenu.LocalMotor;
+            var current = UmbraRuntime.LocalPlayerBody;
+            bool active = UmbraRuntime.characterCollected && current && UmbraRuntime.LocalMotor;
             bool altered = active && GameHooks.Installed && (State.Movement.flightToggle || State.Movement.jumpPackToggle);
-            if (body != current || motor != UmbraMenu.LocalMotor || !altered) Restore();
+            if (body != current || motor != UmbraRuntime.LocalMotor || !altered) Restore();
             if (!active) return;
-            bool inputAllowed = !ModernMenu.IsOpen && !MenuInput.Capturing && !UmbraMenu.chatOpen && Application.isFocused;
+            bool inputAllowed = !MenuController.IsOpen && !MenuInput.Capturing && !UmbraRuntime.chatOpen && Application.isFocused;
             var input = current.inputBank;
             if (inputAllowed && input && State.Movement.alwaysSprintToggle && input.moveVector.sqrMagnitude > 0.01f) current.isSprinting = true;
             if (!altered) return;
             if (!body)
             {
-                body = current; motor = UmbraMenu.LocalMotor;
+                body = current; motor = UmbraRuntime.LocalMotor;
                 ignoredFallDamage = (body.bodyFlags & CharacterBody.BodyFlags.IgnoreFallDamage) != 0;
             }
             body.bodyFlags |= CharacterBody.BodyFlags.IgnoreFallDamage;
@@ -51,7 +51,7 @@ namespace UmbraMenu
         /// <summary>Runs after CharacterMotor.UpdateVelocity so acceleration and gravity cannot reintroduce drift.</summary>
         public static void AfterMotorVelocity(CharacterMotor instance, ref Vector3 velocity)
         {
-            if (!body || instance != motor || !UmbraMenu.characterCollected) return;
+            if (!body || instance != motor || !UmbraRuntime.characterCollected) return;
             if (State.Movement.flightToggle) velocity = requestedVelocity;
             else if (State.Movement.jumpPackToggle && jumpRequested) velocity.y = 15f;
         }
