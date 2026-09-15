@@ -1,0 +1,11 @@
+{
+  "files.exclude": {
+    "**/bin": false,
+    "**/obj": true
+  },
+  "dotnet.defaultSolution": "UmbraMenu.sln",
+  "dotnet.preferCSharpExtension": true,
+  "dotnet.server.useOmnisharp": true,
+  "omnisharp.useModernNet": false,
+  "editor.formatOnType": true
+}
