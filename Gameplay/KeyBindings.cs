@@ -80,7 +80,7 @@ namespace UmbraMenu
                         assignments.Add(new KeyValuePair<Binding, KeyCode>(binding, (KeyCode)code));
                 }
                 foreach (var assignment in assignments) Assign(assignment.Key, assignment.Value);
-            }, out warning);
+            }, out warning, System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "UmbraMenu", "keys.json"));
             loaded = true; LastError = warning; preserveInvalid = warning != null && File.Exists(Path);
             dirty = preserveInvalid; retryAt = 0; lastSaved = Serialize();
             if (warning != null) Debug.LogWarning("Umbra key preferences: " + warning);
@@ -167,3 +167,4 @@ namespace UmbraMenu
         }
     }
 }
+

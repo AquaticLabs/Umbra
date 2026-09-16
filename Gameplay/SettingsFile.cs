@@ -8,8 +8,18 @@ namespace UmbraMenu
     internal static class SettingsFile
     {
         /// <summary>Tries the primary and backup; the caller validates a fresh candidate before accepting it.</summary>
-        public static bool Read(string path, Action<string> accept, out string warning)
+        public static bool Read(string path, Action<string> accept, out string warning, string legacyPath = null)
         {
+            if (accept == null) throw new ArgumentNullException(nameof(accept));
+            if (!File.Exists(path) && !File.Exists(path + ".bak") && legacyPath != null)
+            {
+                string accepted = null;
+                bool imported = Read(legacyPath, json => { accept(json); accepted = json; }, out warning);
+                if (!imported) return false;
+                try { Write(path, accepted); }
+                catch (Exception error) { warning = "Loaded legacy settings, but migration could not be saved: " + error.Message; }
+                return true;
+            }
             warning = null;
             foreach (string candidate in new[] { path, path + ".bak" })
             {
@@ -47,3 +57,5 @@ namespace UmbraMenu
         }
     }
 }
+
+

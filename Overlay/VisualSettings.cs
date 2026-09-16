@@ -68,7 +68,8 @@ namespace UmbraMenu
     internal static class VisualSettings
     {
         public static VisualPreferences Current = CreateDefaults();
-        public static readonly string Path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "UmbraMenu", "visuals.json");
+        public static readonly string Path = new SettingsStore("Umbra").Path;
+        private static readonly string LegacyPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "UmbraMenu", "visuals.json");
         public static string LastError { get; private set; }
         private static bool loaded, preserveInvalid;
         private static string lastSaved, observed;
@@ -134,7 +135,7 @@ namespace UmbraMenu
                 var candidate = CreateDefaults();
                 SettingsJson.Populate(json, candidate);
                 Validate(candidate); Current = candidate;
-            }, out warning);
+            }, out warning, LegacyPath);
             LastError = warning; preserveInvalid = warning != null && File.Exists(Path);
             loaded = true;
             lastSaved = observed = SettingsJson.Serialize(Current);
@@ -214,3 +215,4 @@ namespace UmbraMenu
         }
     }
 }
+
