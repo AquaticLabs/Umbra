@@ -78,7 +78,7 @@ Early injection is supported once Mono and the RoR2 managed assemblies are avail
 
 Gameplay toggle shortcuts are suppressed while the menu or game cursor is active. Click a toggle's key button to rebind it. Server-authoritative actions require the host; stat and cooldown modifiers only apply on the host. Lunar coins affect the persistent game profile and are not undone by disable-all or unloading. Back up that profile before editing currency. Money, XP, spawns, stage actions, and other one-shot operations are also not reversible via disable-all.
 
-Visual settings: `%APPDATA%\TridentMono\Games\Umbra\settings.json`. Key assignments: `%APPDATA%\TridentMono\Games\Umbra\keys.json`. Gameplay mutations are never enabled by loading preferences. Window position/style, ESP switches and colors, FOV/target-line styling, and Misc telemetry choices persist. Changes autosave, with a final flush on close/focus loss/unload. Failed writes are shown in the footer and retried. Previous versions use `.bak`; unreadable primary files are preserved as `.invalid-*` before replacement. A malformed or empty key file cannot recover assignments it never stored, but a valid backup is tried first.
+Visual settings: `%APPDATA%\Trident\Games\Umbra\settings.json`. Key assignments: `%APPDATA%\Trident\Games\Umbra\keys.json`. Gameplay mutations are never enabled by loading preferences. Window position/style, ESP switches and colors, FOV/target-line styling, and Misc telemetry choices persist. Changes autosave, with a final flush on close/focus loss/unload. Failed writes are shown in the footer and retried. Previous versions use `.bak`; unreadable primary files are preserved as `.invalid-*` before replacement. A malformed or empty key file cannot recover assignments it never stored, but a valid backup is tried first.
 
 ## Code and validation
 
@@ -88,5 +88,7 @@ Final runtime/visual/regression tests were skipped at the user's request. Compil
 
 Based on Umbra by Aquatic Labs, originally derived from BennettStaley's Spektre/RoR2ModMenu and Lodington's fork. Existing repository licensing and attribution remain applicable.
 
-Settings migration: when a new settings file and its backup are absent, Umbra imports the corresponding validated file (or backup) from the old %APPDATA%\UmbraMenu folder. Existing new files take precedence, and old files remain untouched. Other TridentMono projects use their own Games\<ProjectId> folder.
+Settings migration: when a new settings file and its backup are absent, Umbra imports the corresponding validated file (or backup) from the old %APPDATA%\UmbraMenu folder. Existing new files take precedence, and old files remain untouched. Other Trident projects use their own Games\<ProjectId> folder.
+
+Settings identity is configured in `Runtime/ProjectConfig.cs`: `SettingsBase = "Trident"`, `GameName = "Umbra"`. Both settings files resolve under `%APPDATA%\<SettingsBase>\Games\<GameName>\`. Filenames remain `settings.json` and `keys.json`; changing the names does not automatically move existing files. The fixed `UmbraMenu` legacy-import folder intentionally stays unchanged.
 

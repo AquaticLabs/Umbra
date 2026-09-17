@@ -25,7 +25,7 @@ namespace UmbraMenu
         private static string lastSaved;
         public static string LastError { get; private set; }
         public static bool IsCapturing { get { return capturing != null; } }
-        private static string Path { get { return System.IO.Path.Combine(System.IO.Path.GetDirectoryName(VisualSettings.Path), "keys.json"); } }
+        private static readonly string Path = new SettingsStore().PathFor("keys.json");
 
         /// <summary>Registers every supported toggle before any page is opened, then restores assignments only.</summary>
         public static void Initialize()

@@ -12,13 +12,14 @@ namespace UmbraMenu
 
         /// <param name="projectId">Stable folder ID, such as Umbra. Not a display title or a path.</param>
         /// <param name="appDataRoot">Optional portable/test root; normally leave null for the current user's ApplicationData.</param>
-        public SettingsStore(string projectId, string appDataRoot = null)
+        public SettingsStore(string projectId = ProjectConfig.GameName, string appDataRoot = null)
         {
+            ValidateName(ProjectConfig.SettingsBase, nameof(ProjectConfig.SettingsBase));
             ValidateName(projectId, nameof(projectId));
             string root = appDataRoot ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             if (string.IsNullOrWhiteSpace(root) || !System.IO.Path.IsPathRooted(root))
                 throw new ArgumentException("Application data must be an absolute directory.", nameof(appDataRoot));
-            Folder = System.IO.Path.Combine(root, "TridentMono", "Games", projectId);
+            Folder = System.IO.Path.Combine(root, ProjectConfig.SettingsBase, "Games", projectId);
         }
 
         public string PathFor(string fileName)
