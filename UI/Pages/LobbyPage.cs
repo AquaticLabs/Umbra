@@ -19,8 +19,10 @@ namespace UmbraMenu
 
         private NetworkUser giftRecipient;
         private string giftMoney = "1000",
-            giftCoins = "10",
-            giftItems = "1";
+            giftCoins = "10";
+        private ItemBrowser giftBrowser = new ItemBrowser();
+        private NetworkUser pickerRecipient;
+        private bool choosingItem;
 
         /// <summary>Requires explicit recipient selection; disconnected recipients never silently redirect gifts.</summary>
         private void DrawLobbyGifts()
@@ -47,15 +49,11 @@ namespace UmbraMenu
                 DrawInput(c, "Lunar coins", ref giftCoins);
                 DrawButtonRow(c, new ButtonAction("Give lunar coins", () => GiveLobbyCoins(ParseUInt(giftCoins))));
                 DrawParagraph(c, "Lunar coins change the recipient's persistent profile. Inform them before awarding.");
-                DrawParagraph(c, "Item: " + (SelectedItem == null ? "Choose one in Items first." : SelectedItem.Name));
-                DrawInput(c, "Item quantity", ref giftItems);
-                DrawButtonRow(c,
-                new ButtonAction("Choose item", () => OpenPage(3)),
-                new ButtonAction("Give item", () =>
+                DrawButtonRow(c, new ButtonAction("Choose item", () =>
                 {
                     RequireRecipient();
-                    ItemService.Give(SelectedItem, giftRecipient.master, ItemCount(giftItems));
-                    Toast("Gift sent to " + giftRecipient.userName);
+                    var recipient = giftRecipient;
+                    DeferLayoutChange(() => { pickerRecipient = recipient; giftBrowser = new ItemBrowser(); choosingItem = true; });
                 }));
 
                 c.Space(7f);
@@ -117,9 +115,25 @@ namespace UmbraMenu
                 Toast("Revived " + giftRecipient.userName);
             }
         }
+        /// <summary>Never redirects an open picker when the selected lobby user changes or disconnects.</summary>
+        private CharacterMaster PickerMaster()
+        {
+            return pickerRecipient && NetworkUser.readOnlyInstancesList.Contains(pickerRecipient) ? pickerRecipient.master : null;
+        }
+
         /// <summary>Displays session data without pretending a run difficulty write changes lobby rules.</summary>
         public void Build(float width)
         {
+            if (choosingItem)
+            {
+                AddCard(2, "Give \"" + (pickerRecipient ? pickerRecipient.userName : "disconnected player") + "\"", c =>
+                {
+                    DrawButtonRow(c, new ButtonAction("Back to lobby", () => DeferLayoutChange(() => choosingItem = false)));
+                    if (!PickerMaster()) DrawParagraph(c, "This recipient is disconnected or has no character yet.");
+                    giftBrowser.Draw(c, PickerMaster, true);
+                });
+                return;
+            }
             DrawLobbyGifts();
             AddCard(0, "SESSION", c =>
             {

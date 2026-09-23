@@ -18,14 +18,20 @@ namespace UmbraMenu
         public string Description { get { return "World overlays, category styling and item-specific overrides."; } }
 
         private EspCategory selectedCategory;
-        private string itemQuery = "";
-        private ItemDef selectedItem;
-        private string lastItemQuery;
-        private readonly List<ItemDef> itemMatches = new List<ItemDef>();
+        private bool otherOverrides;
+        private string query = "", measuredQuery = "", expandedKey;
+        private int overridePage, overridePages = 1, matchCount;
+        private OverrideEntry[] visible = new OverrideEntry[0];
+
+        private sealed class OverrideEntry
+        {
+            public string Key, Name;
+            public EspCategory Category;
+            public Texture Icon;
+        }
         /// <summary>Global overlays, per-category styling, and exact item overrides.</summary>
         public void Build(float width)
         {
-            if (selectedItem && !Prefs.Styles.Any(s => s.Key == "item:" + selectedItem.name)) selectedItem = null;
             AddCard(2, "VISUAL PREFERENCES", DrawPreferenceActions);
 
             AddCard(0, "WORLD OVERLAYS", c =>
@@ -49,28 +55,17 @@ namespace UmbraMenu
                 DrawEspStyle(c, VisualSettings.For(selectedCategory));
                 DrawParagraph(c, "Each category has independent visibility, boxes, labels, RGBA color, and thickness.");
             });
-            AddCard(0, "ITEM OVERRIDES", c =>
-            {
-                DrawInput(c, "Name / catalog ID", ref itemQuery);
-                DrawItemMatches(c);
-                if (selectedItem != null)
-                {
-                    DrawReadout(c, "Selected", selectedItem.name);
-                    DrawEspStyle(c, VisualSettings.ForItem(selectedItem.name, EspRenderer.ItemCategory(selectedItem)));
-                    DrawButtonRow(c, new ButtonAction("Use tier style", () => { Prefs.Styles.RemoveAll(s => s.Key == "item:" + selectedItem.name); selectedItem = null; }));
-                }
-                DrawParagraph(c, "Choose a search result to create its own style. Item colors also apply to revealed chest contents.");
-            });
             AddCard(1, "RETICLE", c =>
             {
                 DrawToggle(c, "Crosshair", Prefs.Crosshair, v => Prefs.Crosshair = v, null);
                 DrawSlider(c, "Crosshair thickness", ref Prefs.CrosshairThickness, 1f, 6f, "0.0");
-                DrawColor(c, ref Prefs.CrosshairColor);
+                DrawColor(c, ref Prefs.CrosshairColor, "Crosshair");
                 DrawToggle(c, "FOV guide", Prefs.ShowFov, v => Prefs.ShowFov = v, null);
                 DrawSlider(c, "FOV thickness (px)", ref Prefs.FovThickness, 1f, 6f, "0.0");
-                DrawColor(c, ref Prefs.FovColor);
+                DrawColor(c, ref Prefs.FovColor, "FOV color");
                 DrawReadout(c, "Current target", ModernAimbot.TargetName);
             });
+            AddCard(2, "ESP OVERRIDES", DrawOverrides);
         }
         /// <summary>Offers direct access to every category without cycling through hidden controls.</summary>
         private void DrawCategoryPicker(CardCursor c)
@@ -87,31 +82,67 @@ namespace UmbraMenu
             c.Advance(Mathf.CeilToInt(categories.Length / (float)columns) * 33 + 12);
             DrawReadout(c, "Editing", SplitName(selectedCategory.ToString()));
         }
-        /// <summary>Caches six matching catalog entries; selecting a result creates an independent override.</summary>
-        private void DrawItemMatches(CardCursor c)
+        /// <summary>Separates pickup styles from specific bodies and interactables, with inline editors.</summary>
+        private void DrawOverrides(CardCursor c)
         {
-            if (c.Measuring && lastItemQuery != itemQuery)
+            if (!c.Measuring)
             {
-                lastItemQuery = itemQuery;
-                itemMatches.Clear();
-                if (!string.IsNullOrWhiteSpace(itemQuery))
+                float half = (c.Width - 8) / 2;
+                if (GUI.Button(new Rect(0, c.Y, half, 40), "Item Overrides", !otherOverrides ? navActiveStyle : buttonStyle))
+                    DeferLayoutChange(() => { otherOverrides = false; overridePage = 0; expandedKey = null; });
+                if (GUI.Button(new Rect(half + 8, c.Y, half, 40), "Other Overrides", otherOverrides ? navActiveStyle : buttonStyle))
+                    DeferLayoutChange(() => { otherOverrides = true; overridePage = 0; expandedKey = null; });
+            }
+            c.Advance(48);
+            DrawInput(c, "Search name / ID", ref query);
+            if (c.Measuring)
+            {
+                if (measuredQuery != query) { measuredQuery = query; overridePage = 0; expandedKey = null; }
+                var entries = new List<OverrideEntry>();
+                if (otherOverrides)
+                {
+                    EspTargetCatalog.Refresh();
+                    entries.AddRange(EspTargetCatalog.Entries.Select(e => new OverrideEntry { Key = e.Key, Name = e.Name, Category = e.Category }));
+                }
+                else
+                {
                     foreach (var index in ItemCatalog.allItems)
                     {
                         var item = ItemCatalog.GetItemDef(index);
-                        if (!item) continue;
-                        if (item.name.IndexOf(itemQuery, StringComparison.OrdinalIgnoreCase) < 0 &&
-                            Language.GetString(item.nameToken).IndexOf(itemQuery, StringComparison.OrdinalIgnoreCase) < 0) continue;
-                        itemMatches.Add(item);
-                        if (itemMatches.Count == 6) break;
+                        if (item) entries.Add(new OverrideEntry { Key = "item:" + item.name, Name = Language.GetString(item.nameToken),
+                            Category = EspRenderer.ItemCategory(item), Icon = item.pickupIconTexture });
                     }
+                }
+                var matches = entries.Where(e => e.Name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    e.Key.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0).OrderBy(e => e.Name).ToArray();
+                matchCount = matches.Length;
+                overridePages = Math.Max(1, (matchCount + 7) / 8);
+                overridePage = Mathf.Clamp(overridePage, 0, overridePages - 1);
+                visible = matches.Skip(overridePage * 8).Take(8).ToArray();
             }
-            foreach (var item in itemMatches)
-                DrawButtonRow(c, new ButtonAction(Language.GetString(item.nameToken), () =>
+            DrawReadout(c, matchCount + " results", (overridePage + 1) + " / " + overridePages);
+            foreach (var entry in visible)
+            {
+                bool expanded = expandedKey == entry.Key;
+                CatalogWidgets.Header(c, entry.Name, entry.Key, entry.Icon, expanded, () => expandedKey = expanded ? null : entry.Key);
+                if (!expanded) continue;
+                var custom = Prefs.Styles.FirstOrDefault(style => style.Key == entry.Key);
+                DrawReadout(c, "Style", custom != null ? "Specific override" : "Inherits " + SplitName(entry.Category.ToString()));
+                if (custom == null)
+                    DrawButtonRow(c, new ButtonAction("Customize this object", () => DeferLayoutChange(() => VisualSettings.OverrideObject(entry.Key, entry.Category))));
+                else
                 {
-                    VisualSettings.OverrideItem(item.name, EspRenderer.ItemCategory(item));
-                    selectedItem = item;
-                }));
-            if (itemMatches.Count == 0) DrawParagraph(c, string.IsNullOrWhiteSpace(itemQuery) ? "Search by display name or catalog ID." : "No matching items loaded.");
+                    DrawEspStyle(c, custom);
+                    DrawButtonRow(c, new ButtonAction("Use category style", () => DeferLayoutChange(() => Prefs.Styles.RemoveAll(style => style.Key == entry.Key))));
+                }
+            }
+            if (matchCount == 0) DrawParagraph(c, otherOverrides ? "No matching objects yet. Spawn assets load in the background; scene objects are added during a run." : "No matching items loaded.");
+            DrawButtonRow(c,
+                new ButtonAction("Previous", () => DeferLayoutChange(() => { overridePage = Math.Max(0, overridePage - 1); expandedKey = null; })),
+                new ButtonAction("Next", () => DeferLayoutChange(() => { overridePage = Math.Min(overridePages - 1, overridePage + 1); expandedKey = null; })));
+            DrawParagraph(c, otherOverrides
+                ? "Specific enemies, bosses, chests, printers and other objects. Every chest variant inherits Chest unless it has its own override."
+                : "Item styles also apply to revealed chest contents. Remove an override to inherit its tier again.");
         }
     }
 }

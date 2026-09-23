@@ -38,21 +38,20 @@ namespace UmbraMenu
                     new ButtonAction("Remove", () => RemoveCoins(ParseUInt(coinValue))));
             }, true);
 
-            AddCard(1, "EXPERIENCE & VITALS", c =>
+            AddCard(1, "VITALS", c =>
+            {
+                DrawButtonRow(c, new ButtonAction("Heal", HealPlayer), new ButtonAction("Respawn", RespawnPlayer));
+                DrawToggle(c, "God mode", State.Player.GodToggle, SetGodMode, "Host only. Each mode is released when disabled.");
+                DrawCycle(c, "God mode type", GodModes.Name, GodModes.Cycle);
+                DrawParagraph(c, GodModes.Description);
+            }, true);
+            AddCard(0, "EXPERIENCE", c =>
             {
                 CharacterBody body = UmbraRuntime.LocalPlayerBody;
                 DrawReadout(c, "Level", body ? body.level.ToString("0.0") : "—");
                 DrawReadout(c, "Experience", body ? body.experience.ToString("N0") : "—");
                 DrawInput(c, "Experience amount", ref experienceValue);
-                DrawButtonRow(c,
-                    new ButtonAction("Give XP", () => GiveExperience(ParseULong(experienceValue))),
-                    new ButtonAction("Heal", HealPlayer),
-                    new ButtonAction("Respawn", RespawnPlayer));
-                c.Space(7f);
-                DrawToggle(c, "God mode", State.Player.GodToggle, SetGodMode, "Host only. Each mode is released when disabled.");
-                DrawCycle(c, "God mode type", GodModes.Name, GodModes.Cycle);
-                DrawParagraph(c, GodModes.Description);
-                DrawToggle(c, "Infinite skills", State.Player.SkillToggle, v => State.Player.SkillToggle = v, null);
+                DrawButtonRow(c, new ButtonAction("Give XP", () => GiveExperience(ParseULong(experienceValue))));
             }, true);
             AddCard(0, "MOVEMENT", c =>
             {
@@ -67,6 +66,12 @@ namespace UmbraMenu
             });
 
 
+            AddCard(1, "COOLDOWNS & STATE", c =>
+            {
+                DrawToggle(c, "Infinite skills", State.Player.SkillToggle, v => State.Player.SkillToggle = v, null);
+                DrawToggle(c, "Infinite equipment", State.Items.noEquipmentCD, v => State.Items.noEquipmentCD = v, null);
+                DrawButtonRow(c, new ButtonAction("Disable gameplay mods", DisableGameplayMods));
+            });
             AddCard(1, "STAT TUNING", c =>
             {
                 DrawToggle(c, "Damage scaling", State.StatsMod.damageToggle, v => State.StatsMod.damageToggle = v, null);

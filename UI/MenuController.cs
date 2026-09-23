@@ -11,7 +11,7 @@ namespace UmbraMenu
     internal static class MenuController
     {
         private static IMenuPage[] Pages = CreatePages();
-        internal static ItemService.Entry SelectedItem;
+        private static readonly Queue<Action> layoutChanges = new Queue<Action>();
         /// <summary>Explicit page registry; each instance owns its fields and selection state.</summary>
         private static IMenuPage[] CreatePages() { return new IMenuPage[] { new PlayerPage(), new AimbotPage(), new VisualsPage(), new ItemsPage(), new WorldPage(), new SpawnPage(), new LobbyPage(), new MiscPage() }; }
         private static Rect window = new Rect(40f, 40f, 950f, 750f);
@@ -38,7 +38,7 @@ namespace UmbraMenu
         public static void Initialize()
         {
             window.x = Prefs.WindowX; window.y = Prefs.WindowY;
-            Pages = CreatePages(); SelectedItem = null; page = 0; pageScroll = Vector2.zero;
+            Pages = CreatePages(); layoutChanges.Clear(); page = 0; pageScroll = Vector2.zero;
             status = "Ready"; statusUntil = 0;
         }
 
@@ -51,6 +51,7 @@ namespace UmbraMenu
             if (open) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
             else
             {
+                MenuWidgets.CloseColorPicker(true);
                 KeyBindings.CancelCapture();
                 MenuInput.KeyboardFocused = false;
                 Cursor.lockState = cursorLock; Cursor.visible = cursorVisible;
@@ -64,6 +65,7 @@ namespace UmbraMenu
         /// <summary>Draws at native pixel scale; short screens scroll and narrow screens use one column.</summary>
         public static void Draw()
         {
+            while (layoutChanges.Count > 0) SafeAction(layoutChanges.Dequeue(), "Update menu");
             EnsureStyles();
             if (!IsOpen) return;
             window.width = Mathf.Min(950f, Mathf.Max(300f, Screen.width - 24f));
@@ -97,6 +99,8 @@ namespace UmbraMenu
                 GUI.Label(new Rect(16, 72, window.width - 32, 28), "Not hosting — host-only mods are disabled. Local aim, movement and visuals remain available.", mutedStyle);
             }
 
+            bool contentEnabled = GUI.enabled;
+            if (MenuWidgets.ColorPickerOpen) GUI.enabled = false;
             DrawNavigation(sidebarWidth);
             float contentX = sidebarWidth + 20f;
             float availableWidth = window.width - contentX - 20f;
@@ -118,6 +122,8 @@ namespace UmbraMenu
             GUI.Label(new Rect(contentX, window.height - 36, availableWidth, 26),
                 KeyBindings.IsCapturing ? "Press a key / mouse button • Esc cancel • Delete clear" : Time.unscaledTime < statusUntil ? status : KeyBindings.LastError ?? VisualSettings.LastError ?? "Insert: menu  /  End: disable gameplay mods", mutedStyle);
             GUI.DragWindow(new Rect(0, 0, window.width, 64));
+            GUI.enabled = contentEnabled;
+            MenuWidgets.DrawColorPickerOverlay();
         }
 
         /// <summary>Uses compact sidebar rows so navigation fits a short window.</summary>
@@ -169,8 +175,9 @@ namespace UmbraMenu
         {
             SetOpen(false);
             DisposeStyles();
+            MenuWidgets.DisposeColorPicker();
             cards.Clear();
-            SelectedItem = null;
+            layoutChanges.Clear();
             Pages = Array.Empty<IMenuPage>();
         }
 
@@ -182,6 +189,9 @@ namespace UmbraMenu
             status = message;
             statusUntil = Time.unscaledTime + 3.5f;
         }
+
+        /// <summary>Applies foldout/navigation changes before the next measure pass, keeping paint geometry consistent.</summary>
+        internal static void DeferLayoutChange(Action action) { layoutChanges.Enqueue(action); }
         /// <summary>Centers the current window inside the display.</summary>
         internal static void CenterWindow()
         {

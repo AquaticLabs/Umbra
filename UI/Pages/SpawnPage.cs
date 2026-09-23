@@ -19,7 +19,9 @@ namespace UmbraMenu
 
         private readonly string[] spawnGroups = { "All", "Common", "Boss", "Chest", "Shrine", "Drone", "Printer", "Portal", "Other" };
         private string spawnQuery = "", spawnGroup = "All";
-        private int spawnPage;
+        private int spawnPage, pages = 1, matchCount;
+        private string measuredQuery = "";
+        private SpawnCatalog.Entry[] visible = Array.Empty<SpawnCatalog.Entry>();
         private SpawnCatalog.Entry spawnSelection;
         /// <summary>Offers exact, categorized spawn cards with search and pagination instead of ambiguous substring presets.</summary>
         public void Build(float width)
@@ -29,50 +31,41 @@ namespace UmbraMenu
             {
                 DrawReadout(c, "Catalog", SpawnCatalog.Status);
                 DrawInput(c, "Search name / card ID", ref spawnQuery);
-                DrawChips(c, spawnGroups, spawnGroup, group => { spawnGroup = group; spawnPage = 0; });
-                var matches = SpawnCatalog.Entries.Where(e => (spawnGroup == "All" || e.Category == spawnGroup) && (e.Name.IndexOf(spawnQuery, StringComparison.OrdinalIgnoreCase) >= 0 || e.Card.name.IndexOf(spawnQuery, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
-                int pages = Math.Max(1, (matches.Count + 7) / 8);
-                spawnPage = Math.Max(0, Math.Min(pages - 1, spawnPage));
-                DrawReadout(c, matches.Count + " matches", (spawnPage + 1) + " / " + pages);
-                foreach (var entry in matches.Skip(spawnPage * 8).Take(8))
+                DrawChips(c, spawnGroups, spawnGroup, group => DeferLayoutChange(() => { spawnGroup = group; spawnPage = 0; spawnSelection = null; }));
+                if (c.Measuring)
                 {
-                    DrawSpawnRow(c, entry);
+                    if (measuredQuery != spawnQuery) { measuredQuery = spawnQuery; spawnPage = 0; spawnSelection = null; }
+                    var matches = SpawnCatalog.Entries.Where(e => (spawnGroup == "All" || e.Category == spawnGroup) && (e.Name.IndexOf(spawnQuery, StringComparison.OrdinalIgnoreCase) >= 0 || e.Card.name.IndexOf(spawnQuery, StringComparison.OrdinalIgnoreCase) >= 0)).ToList();
+                    matchCount = matches.Count;
+                    pages = Math.Max(1, (matchCount + 7) / 8);
+                    spawnPage = Math.Max(0, Math.Min(pages - 1, spawnPage));
+                    visible = matches.Skip(spawnPage * 8).Take(8).ToArray();
                 }
-                DrawButtonRow(c, new ButtonAction("Previous", () => spawnPage = Math.Max(0, spawnPage - 1)), new ButtonAction("Next", () => spawnPage = Math.Min(pages - 1, spawnPage + 1)));
-                DrawParagraph(c, "Common/boss follows the monster body's champion classification. Select the exact asset; variants remain separate.");
+                DrawReadout(c, matchCount + " matches", (spawnPage + 1) + " / " + pages);
+                foreach (var entry in visible)
+                {
+                    CatalogWidgets.Header(c, entry.Name, entry.Card.name, entry.Icon, entry == spawnSelection,
+                        () => spawnSelection = spawnSelection == entry ? null : entry, entry.IconSprite);
+                    if (entry != spawnSelection) continue;
+                    DrawCycle(c, "Monster team", State.Spawn.team[State.Spawn.teamIndex].ToString(), CycleSpawnTeam);
+                    DrawSlider(c, "Minimum distance", ref State.Spawn.minDistance, 1, 30, "0");
+                    DrawSlider(c, "Maximum distance", ref State.Spawn.maxDistance, 10, 100, "0");
+                    bool enabled = GUI.enabled;
+                    GUI.enabled = enabled && HasHost;
+                    try { DrawButtonRow(c, new ButtonAction("Spawn", () => { SpawnCatalog.Spawn(entry); Toast("Spawned " + entry.Name); })); }
+                    finally { GUI.enabled = enabled; }
+                }
+                DrawButtonRow(c,
+                    new ButtonAction("Previous", () => DeferLayoutChange(() => { spawnPage = Math.Max(0, spawnPage - 1); spawnSelection = null; })),
+                    new ButtonAction("Next", () => DeferLayoutChange(() => { spawnPage = Math.Min(pages - 1, spawnPage + 1); spawnSelection = null; })));
+                DrawParagraph(c, "Expand an entry for placement controls. Common/boss follows the monster body's champion classification; variants remain separate.");
             });
-            AddCard(1, "PLACEMENT & SPAWN", c =>
+            AddCard(1, "SPAWN TOOLS", c =>
             {
-                DrawParagraph(c, spawnSelection == null ? "Choose a spawn card." : spawnSelection.Name + "\n" + spawnSelection.Card.name);
-                DrawCycle(c, "Monster team", State.Spawn.team[State.Spawn.teamIndex].ToString(), CycleSpawnTeam);
-                DrawSlider(c, "Minimum distance", ref State.Spawn.minDistance, 1, 30, "0");
-                DrawSlider(c, "Maximum distance", ref State.Spawn.maxDistance, 10, 100, "0");
-                DrawButtonRow(c, new ButtonAction("Spawn selected", () => { SpawnCatalog.Spawn(spawnSelection); Toast("Spawned " + spawnSelection.Name); }));
                 DrawParagraph(c, "Spawns one object. Team applies to monsters only. Portals appear immediately and still follow their game's destination/stage rules.");
                 DrawButtonRow(c, new ButtonAction("Clean up Umbra spawns", () => ConfirmAction("Clean up Umbra spawns", DestroyUmbraSpawns), true));
             }, true);
         }
 
-        /// <summary>Preserves the catalog layout while adding native portraits/inspect sprites and a consistent fallback.</summary>
-        private void DrawSpawnRow(CardCursor c, SpawnCatalog.Entry entry)
-        {
-            float height = Mathf.Max(46, labelStyle.CalcHeight(new GUIContent(entry.Name), c.Width - 58) + 12);
-            if (!c.Measuring)
-            {
-                if (GUI.Button(new Rect(0, c.Y, c.Width, height), GUIContent.none, entry == spawnSelection ? navActiveStyle : buttonStyle)) spawnSelection = entry;
-                Rect imageRect = new Rect(6, c.Y + 5, 34, 34);
-                if (entry.IconSprite)
-                {
-                    // Atlas UVs account for packing; Sprite.rect describes the un-packed source rectangle.
-                    var source = UnityEngine.Sprites.DataUtility.GetOuterUV(entry.IconSprite);
-                    var texture = entry.IconSprite.texture;
-                    GUI.DrawTextureWithTexCoords(imageRect, texture, new Rect(source.x, source.y, source.z - source.x, source.w - source.y));
-                }
-                else if (entry.Icon) GUI.DrawTexture(imageRect, entry.Icon, ScaleMode.ScaleToFit);
-                else GUI.Label(imageRect, entry.Category.Substring(0, 1), badgeStyle);
-                GUI.Label(new Rect(48, c.Y + 4, c.Width - 56, height - 8), new GUIContent(entry.Name, entry.Card.name), labelStyle);
-            }
-            c.Advance(height + 6);
-        }
     }
 }

@@ -32,7 +32,7 @@ namespace UmbraMenu
             foreach (var body in CharacterBody.readOnlyInstancesList)
                 if (body && body != UmbraRuntime.LocalPlayerBody) Add(body, EspCategory.Enemy, body.GetDisplayName());
             foreach (var purchase in UnityEngine.Object.FindObjectsOfType<PurchaseInteraction>())
-                Add(purchase, Classify(purchase.gameObject.name), purchase.GetDisplayName());
+                Add(purchase, Classify(purchase.gameObject), purchase.GetDisplayName());
             foreach (var barrel in UnityEngine.Object.FindObjectsOfType<BarrelInteraction>()) Add(barrel, EspCategory.Barrel, "Barrel");
             foreach (var scrapper in UnityEngine.Object.FindObjectsOfType<ScrapperController>()) Add(scrapper, EspCategory.Scrapper, "Scrapper");
             foreach (var secret in UnityEngine.Object.FindObjectsOfType<PressurePlateController>()) Add(secret, EspCategory.Secret, "Secret switch");
@@ -50,9 +50,10 @@ namespace UmbraMenu
             var renderers = new List<UnityEngine.Renderer>();
             foreach (var renderer in root.GetComponentsInChildren<UnityEngine.Renderer>())
                 if (renderer is MeshRenderer || renderer is SkinnedMeshRenderer) renderers.Add(renderer);
+            EspTargetCatalog.Register(source.gameObject, name, body ? (body.isBoss ? EspCategory.Boss : EspCategory.Enemy) : category, body);
             entries.Add(new Entry
             {
-                Source = source, Body = body, Category = category, Name = name,
+                Source = source, Body = body, Category = category, Name = name, StyleKey = EspTargetCatalog.Key(source.gameObject, body),
                 Renderers = renderers.ToArray(), Colliders = source.GetComponentsInChildren<Collider>(),
                 Purchase = source.GetComponent<PurchaseInteraction>(), Barrel = source.GetComponent<BarrelInteraction>(),
                 Pickup = source.GetComponent<GenericPickupController>(), Chest = source.GetComponent<ChestBehavior>()
@@ -81,7 +82,7 @@ namespace UmbraMenu
                 if (!Visible(entry, out category)) continue;
                 float distance = Vector3.Distance(camera.transform.position, entry.Source.transform.position);
                 if (distance > Prefs.MaxDistance) continue;
-                EspStyle style = VisualSettings.For(category);
+                EspStyle style = VisualSettings.ForObject(entry.StyleKey, category);
                 string name = entry.Name;
                 if (entry.Pickup)
                 {
@@ -248,9 +249,11 @@ namespace UmbraMenu
         #region Classification and palette resolution
 
         /// <summary>Maps stable prefab names to categories with specific matches before general ones.</summary>
-        private static EspCategory Classify(string prefab)
+        internal static EspCategory Classify(GameObject prefab)
         {
-            string name = prefab.ToLowerInvariant();
+            string name = prefab.name.ToLowerInvariant();
+            // Components identify all chest variants before broad shrine/color name matches.
+            if (prefab.GetComponent<ChestBehavior>() || name.Contains("chest") || name.Contains("multishop")) return EspCategory.Chest;
             if (name.Contains("newt")) return EspCategory.Newt;
             if (name.Contains("teleporter")) return EspCategory.Teleporter;
             if (name.Contains("scrapper")) return EspCategory.Scrapper;
@@ -308,7 +311,7 @@ namespace UmbraMenu
             public UnityEngine.Renderer[] Renderers;
             public Collider[] Colliders;
             public EspCategory Category;
-            public string Name;
+            public string Name, StyleKey;
         }
 
         #endregion

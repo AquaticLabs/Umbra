@@ -15,13 +15,14 @@ namespace UmbraMenu
     internal sealed class MiscPage : IMenuPage
     {
         public string Title { get { return "Misc"; } }
-        public string Description { get { return "Telemetry, cooldowns, interface settings and lifecycle controls."; } }
+        public string Description { get { return "Telemetry, interface settings and lifecycle controls."; } }
 
         /// <summary>Provides useful local telemetry and explicit, scene-scoped recovery actions.</summary>
         private void DrawMiscExtras()
         {
             AddCard(0, "ON-SCREEN TELEMETRY", c =>
             {
+                DrawToggle(c, "Active mod strip", State.Render.renderMods, v => State.Render.renderMods = v, null);
                 DrawToggle(c, "FPS / ping", MiscFeatures.PerformanceHud, v => MiscFeatures.PerformanceHud = v, "Shown on the right side; host ping is 0 ms.");
                 DrawToggle(c, "Run timer", MiscFeatures.RunTimer, v => MiscFeatures.RunTimer = v, null);
                 DrawToggle(c, "Coordinates", MiscFeatures.Coordinates, v => MiscFeatures.Coordinates = v, null);
@@ -35,19 +36,12 @@ namespace UmbraMenu
                 DrawButtonRow(c, new ButtonAction("Save position", () => { MiscFeatures.Bookmark(); Toast("Position saved for this stage"); }), new ButtonAction("Return", MiscFeatures.Return));
             }, true);
         }
-        /// <summary>Groups telemetry, cooldown, window appearance, and lifecycle controls.</summary>
+        /// <summary>Groups telemetry, window appearance, and lifecycle controls.</summary>
         public void Build(float width)
         {
             DrawMiscExtras();
 
 
-            AddCard(1, "COOLDOWNS & STATE", c =>
-            {
-                DrawToggle(c, "Infinite skills", State.Player.SkillToggle, v => State.Player.SkillToggle = v, null);
-                DrawToggle(c, "Infinite equipment", State.Items.noEquipmentCD, v => State.Items.noEquipmentCD = v, null);
-                DrawToggle(c, "Active mod strip", State.Render.renderMods, v => State.Render.renderMods = v, null);
-                DrawButtonRow(c, new ButtonAction("Disable gameplay mods", DisableGameplayMods));
-            });
             AddCard(1, "APPEARANCE", c =>
             {
                 DrawSlider(c, "Window opacity", ref Prefs.WindowOpacity, 0.4f, 1f, "0.00");

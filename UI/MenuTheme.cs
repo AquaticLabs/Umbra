@@ -16,7 +16,7 @@ namespace UmbraMenu
         internal static GUIStyle windowStyle, headerStyle, sidebarStyle, cardStyle, titleStyle, subtitleStyle,
             sectionStyle, labelStyle, mutedStyle, valueStyle, navStyle, navActiveStyle, buttonStyle,
             dangerButtonStyle, inputStyle, toggleOnStyle, toggleOffStyle, badgeStyle, sliderStyle,
-            sliderThumbStyle, scrollStyle, scrollThumbStyle;
+            sliderThumbStyle, scrollStyle, scrollThumbStyle, colorFieldStyle, colorLabelStyle;
         internal static readonly List<Texture2D> textures = new List<Texture2D>();
         internal static int builtRadius = -1;
         internal static readonly Color32 Accent = new Color32(45, 143, 255, 255);
@@ -48,15 +48,18 @@ namespace UmbraMenu
             buttonStyle = ButtonStyle(new Color32(17, 40, 65, 220), new Color32(26, 64, 100, 245), Text, 12, TextAnchor.MiddleCenter, radius);
             dangerButtonStyle = ButtonStyle(new Color32(65, 28, 42, 220), new Color32(91, 36, 51, 245), new Color32(255, 196, 207, 255), 12, TextAnchor.MiddleCenter, radius);
             inputStyle = ButtonStyle(new Color32(4, 15, 28, 215), new Color32(10, 28, 46, 240), Text, 13, TextAnchor.MiddleRight, radius);
+            colorFieldStyle = new GUIStyle(inputStyle) { fontSize = 11, alignment = TextAnchor.MiddleCenter,
+                padding = new RectOffset(2, 2, 0, 0), wordWrap = false };
+            colorLabelStyle = new GUIStyle(mutedStyle) { alignment = TextAnchor.MiddleLeft, wordWrap = false };
             toggleOnStyle = ButtonStyle(Accent, new Color32(72, 165, 255, 255), Color.white, 11, TextAnchor.MiddleCenter, radius);
             toggleOffStyle = ButtonStyle(new Color32(27, 48, 69, 220), new Color32(38, 65, 93, 245), Muted, 11, TextAnchor.MiddleCenter, radius);
             badgeStyle = TextStyle(new Color32(51, 216, 181, 255), 11, FontStyle.Bold, TextAnchor.MiddleCenter);
             sliderStyle = BoxStyle(new Color32(28, 56, 84, 255), Color.clear, 2);
-            sliderStyle.fixedHeight = 6;
-            sliderStyle.margin = new RectOffset(0, 0, 5, 0);
+            sliderStyle.fixedHeight = 4;
+            sliderStyle.margin = new RectOffset(0, 0, 0, 0);
             sliderThumbStyle = BoxStyle(Accent, Accent, 3);
-            sliderThumbStyle.fixedWidth = 12; sliderThumbStyle.fixedHeight = 16;
-            sliderThumbStyle.overflow = new RectOffset(0, 0, 5, 5);
+            sliderThumbStyle.fixedWidth = 10; sliderThumbStyle.fixedHeight = 12;
+            sliderThumbStyle.overflow = new RectOffset(0, 0, 0, 0);
             scrollStyle = BoxStyle(new Color32(7, 20, 34, 100), Color.clear, 3);
             scrollStyle.fixedWidth = 10;
             scrollThumbStyle = BoxStyle(new Color32(49, 88, 126, 230), Color.clear, 3);

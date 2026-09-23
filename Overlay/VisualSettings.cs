@@ -119,7 +119,24 @@ namespace UmbraMenu
             var existing = Current.Styles.Find(s => s != null && s.Key == key);
             if (existing != null) return existing;
             var original = For(fallback);
-            var result = new EspStyle(key, original.Color) { Thickness = original.Thickness, Boxes = original.Boxes, Labels = original.Labels };
+            var result = new EspStyle(key, original.Color) { Enabled = original.Enabled, Thickness = original.Thickness, Boxes = original.Boxes, Labels = original.Labels };
+            Current.Styles.Add(result);
+            return result;
+        }
+
+        /// <summary>Resolves exact world-object overrides before their shared category.</summary>
+        public static EspStyle ForObject(string key, EspCategory fallback)
+        {
+            return Current.Styles.Find(style => style != null && style.Key == key) ?? For(fallback);
+        }
+
+        /// <summary>Copies a category once; removing the override resumes live category inheritance.</summary>
+        public static EspStyle OverrideObject(string key, EspCategory fallback)
+        {
+            var existing = Current.Styles.Find(style => style != null && style.Key == key);
+            if (existing != null) return existing;
+            var original = For(fallback);
+            var result = new EspStyle(key, original.Color) { Enabled = original.Enabled, Thickness = original.Thickness, Boxes = original.Boxes, Labels = original.Labels };
             Current.Styles.Add(result);
             return result;
         }

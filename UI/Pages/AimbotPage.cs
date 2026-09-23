@@ -45,13 +45,13 @@ namespace UmbraMenu
             {
                 DrawToggle(c, "Draw FOV circle", Prefs.ShowFov, v => Prefs.ShowFov = v, null);
                 DrawSlider(c, "FOV thickness (px)", ref Prefs.FovThickness, 1, 6, "0.0");
-                DrawColor(c, ref Prefs.FovColor);
+                DrawColor(c, ref Prefs.FovColor, "FOV color");
             });
             AddCard(1, "TARGET LINE", c =>
             {
                 DrawToggle(c, "Target line", Prefs.TargetLine, v => Prefs.TargetLine = v, "From the cursor (or crosshair while locked) to the selected aim point.");
                 DrawSlider(c, "Line thickness (px)", ref Prefs.TargetLineThickness, 1, 6, "0.0");
-                DrawColor(c, ref Prefs.TargetLineColor);
+                DrawColor(c, ref Prefs.TargetLineColor, "Target line");
             });
         }
     }
