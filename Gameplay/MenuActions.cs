@@ -223,6 +223,8 @@ namespace UmbraMenu
             State.Movement.alwaysSprintToggle = false;
             State.Movement.flightToggle = false;
             State.Movement.jumpPackToggle = false;
+            State.Movement.InfiniteJumps = State.Movement.OverrideJumps = State.Movement.SpeedMultiplier = false;
+            MovementModifiers.Restore();
             MovementController.Restore();
             Toast("Movement options reset");
         }
@@ -235,6 +237,9 @@ namespace UmbraMenu
             State.Player.AimBotToggle = false;
             State.Player.SkillToggle = false;
             State.Player.RailgunPerfectReload = false;
+            State.Player.NoLunarCost = State.Player.UnlimitedTurrets = false;
+            DefaultMods.CancelPending();
+            LobbyProtection.Clear();
             RailgunPerfectReload.Clear();
             SetGodMode(false);
             GodModes.Restore();

@@ -21,7 +21,7 @@ namespace UmbraMenu
         public Color Color = new Color(0.28f, 0.66f, 1f, 1f);
         public float Thickness = 1.5f;
         public bool Enabled = true;
-        public bool Boxes = true;
+        public bool Boxes = false;
         public bool Labels = true;
 
         /// <summary>Creates a palette entry with a stable key and initial color.</summary>
@@ -35,7 +35,7 @@ namespace UmbraMenu
         }
     }
 
-    /// <summary>Visual-only preferences; enabling gameplay mutations is never persisted here.</summary>
+    /// <summary>Visual preferences and explicitly opted-in startup selections; one-shot actions are never persisted.</summary>
     [Serializable]
     internal sealed class VisualPreferences
     {
@@ -61,6 +61,18 @@ namespace UmbraMenu
         public bool CornerBoxes;
         public float MaxDistance = 300f;
         public int FontSize = 12;
+        public float SpeedMultiplier = 1f, SpeedStep = 0.25f;
+        public bool ApplyDefaultMods;
+        public string DefaultMods = "";
+        public int JumpCount = 2;
+        public bool NearestChestTracer;
+        public Color ChestTracerColor = new Color(1f, 0.8f, 0.25f);
+        public float ChestTracerThickness = 1.5f;
+        public Color HealthCostColor = new Color(1f, 0.3f, 0.3f), SoulCostColor = new Color(0.8f, 0.5f, 1f);
+        public bool Minimap;
+        public float MapSize = 230f, MapRange = 100f, MapRefreshRate = 5f;
+        public float MapX = 20f, MapY = 120f;
+        public Color MapEnemyColor = new Color(1f, 0.3f, 0.3f), MapLootColor = new Color(0.3f, 1f, 0.6f);
         public List<EspStyle> Styles = new List<EspStyle>();
     }
 
@@ -91,6 +103,8 @@ namespace UmbraMenu
                     case EspCategory.LegendaryItem: case EspCategory.Blood: color = new Color(1f, 0.3f, 0.36f); break;
                     case EspCategory.Equipment: case EspCategory.Chance: color = new Color(1f, 0.7f, 0.35f); break;
                     case EspCategory.CommonItem: color = new Color(0.93f, 0.96f, 1f); break;
+                    case EspCategory.Teleporter: color = new Color(0.667f, 0.169f, 0.941f); break;
+                    case EspCategory.Scrapper: color = new Color(0.451f, 0.392f, 0.251f); break;
                 }
                 result.Styles.Add(new EspStyle(category.ToString(), color));
             }
@@ -199,6 +213,18 @@ namespace UmbraMenu
         /// <summary>Normalizes a candidate before swapping the active settings object.</summary>
         private static void ValidateValues(VisualPreferences Current)
         {
+            Current.SpeedMultiplier = Clamp(Current.SpeedMultiplier, 0.1f, 20f, 1f);
+            Current.SpeedStep = Clamp(Current.SpeedStep, 0.05f, 5f, 0.25f);
+            Current.JumpCount = Mathf.Clamp(Current.JumpCount, 1, 100);
+            Current.MapSize = Clamp(Current.MapSize, 140f, 500f, 230f);
+            Current.MapRange = Clamp(Current.MapRange, 20f, 500f, 100f);
+            Current.MapRefreshRate = Clamp(Current.MapRefreshRate, 1f, 15f, 5f);
+            Current.MapX = Clamp(Current.MapX, 0f, 32768f, 20f);
+            Current.MapY = Clamp(Current.MapY, 0f, 32768f, 120f);
+            Current.MapEnemyColor = ClampColor(Current.MapEnemyColor); Current.MapLootColor = ClampColor(Current.MapLootColor);
+            Current.HealthCostColor = ClampColor(Current.HealthCostColor); Current.SoulCostColor = ClampColor(Current.SoulCostColor);
+            Current.ChestTracerColor = ClampColor(Current.ChestTracerColor);
+            Current.ChestTracerThickness = Clamp(Current.ChestTracerThickness, 1f, 6f, 1.5f);
             Current.WindowOpacity = Clamp(Current.WindowOpacity, 0.4f, 1f, 0.82f);
             Current.CornerRadius = Clamp(Current.CornerRadius, 0f, 10f, 6f);
             Current.FovThickness = Clamp(Current.FovThickness, 1f, 6f, 1.5f);

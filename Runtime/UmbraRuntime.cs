@@ -37,6 +37,7 @@ namespace UmbraMenu
             if (!GameHooks.Installed) throw new InvalidOperationException("Required input/camera/movement hooks could not be installed. See Player.log.");
             currentScene = SceneManager.GetActiveScene();
             RuntimeContext.Refresh();
+            DefaultMods.Initialize();
             SceneManager.activeSceneChanged += OnSceneChanged; sceneSubscribed = true;
             RoR2Application.isModded = true;
             IsReady = true;
@@ -49,6 +50,7 @@ namespace UmbraMenu
             RuntimeContext.Refresh();
             HandleInput(); MenuInput.Update();
             VisualSettings.Tick(); KeyBindings.Tick();
+            DefaultMods.Update(); MovementModifiers.Update(); LobbyProtection.Update();
             MovementController.Update(); GodModes.Update(); StatOverrides.Update(LocalPlayerBody);
             if (characterCollected && MenuController.HasHost)
             {
@@ -57,6 +59,7 @@ namespace UmbraMenu
             }
             MiscFeatures.Update(); SpawnCatalog.Update(); EspRenderer.Update();
             RailgunPerfectReload.Update();
+            MinimapRenderer.Update();
         }
 
         /// <summary>Keeps the menu cursor usable; camera and flight changes run at their native hook boundaries.</summary>
@@ -73,7 +76,7 @@ namespace UmbraMenu
         {
             if (!IsReady) return;
             int depth = GUI.depth;
-            try { GUI.depth = -50; EspRenderer.Draw(); MiscFeatures.Draw(); MenuController.Draw(); }
+            try { GUI.depth = -50; EspRenderer.Draw(); MiscFeatures.Draw(); MinimapRenderer.Draw(); MenuController.Draw(); }
             finally { GUI.depth = depth; }
         }
 
@@ -92,6 +95,8 @@ namespace UmbraMenu
         {
             currentScene = next;
             Cleanup("scene movement", MovementController.Restore);
+            Cleanup("scene movement modifiers", MovementModifiers.Restore);
+            ChestReplacement.Clear(); MinimapRenderer.Dispose();
             Cleanup("scene stats", StatOverrides.Restore);
             Cleanup("scene god mode", GodModes.Restore);
             ModernAimbot.ClearTarget(); EspRenderer.Clear(); MiscFeatures.Clear();
@@ -113,6 +118,10 @@ namespace UmbraMenu
             sceneSubscribed = false;
             if (preferencesLoaded) FlushPreferences();
             Cleanup("movement", MovementController.Restore);
+            Cleanup("movement modifiers", MovementModifiers.Restore);
+            Cleanup("lobby protection", LobbyProtection.Clear);
+            Cleanup("chest replacements", ChestReplacement.Clear);
+            Cleanup("minimap", MinimapRenderer.Dispose);
             Cleanup("god mode", GodModes.Restore);
             Cleanup("statistics", StatOverrides.Restore);
             Cleanup("gameplay toggles", MenuActions.DisableGameplayMods);

@@ -40,6 +40,17 @@ namespace UmbraMenu
         public void Build(float width)
         {
             DrawMiscExtras();
+            AddCard(0, "DEFAULT MODS", c =>
+            {
+                DrawToggle(c, "Apply on injection", Prefs.ApplyDefaultMods, enabled => Prefs.ApplyDefaultMods = enabled, "Runs once after your first living character is ready. End cancels a pending application.");
+                foreach (var option in DefaultMods.Options)
+                {
+                    string name = option;
+                    DrawToggle(c, "Default: " + name, DefaultMods.Selected(name), enabled => DefaultMods.Select(name, enabled), null);
+                }
+                DrawButtonRow(c, new ButtonAction("Apply selected now", DefaultMods.Apply));
+                DrawParagraph(c, "Choices and movement values save automatically. Only selected mods are enabled; others stay unchanged. No Lunar Cost, gifts and other-player protection are never auto-applied.");
+            });
 
 
             AddCard(1, "APPEARANCE", c =>

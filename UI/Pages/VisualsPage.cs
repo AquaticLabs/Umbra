@@ -65,6 +65,26 @@ namespace UmbraMenu
                 DrawColor(c, ref Prefs.FovColor, "FOV color");
                 DrawReadout(c, "Current target", ModernAimbot.TargetName);
             });
+            AddCard(0, "CHEST TARGET & COSTS", c =>
+            {
+                DrawToggle(c, "Nearest capable chest ESP", Prefs.NearestChestTracer, v => Prefs.NearestChestTracer = v, "The tracer identifies the nearest chest supported by Replace nearest chest, including when ordinary chest ESP is off.");
+                DrawSlider(c, "Tracer thickness", ref Prefs.ChestTracerThickness, 1, 6, "0.0");
+                DrawColor(c, ref Prefs.ChestTracerColor, "Chest tracer");
+                DrawColor(c, ref Prefs.HealthCostColor, "Health cost");
+                DrawColor(c, ref Prefs.SoulCostColor, "Soul cost");
+            });
+            AddCard(1, "MINIMAP", c =>
+            {
+                DrawToggle(c, "Minimap", Prefs.Minimap, v => Prefs.Minimap = v, "Top-down terrain camera: white is you; colored markers show enemies and loot/interactables.");
+                DrawSlider(c, "Size (px)", ref Prefs.MapSize, 140, 500, "0");
+                DrawSlider(c, "Range / half-width (m)", ref Prefs.MapRange, 20, 500, "0");
+                DrawSlider(c, "Refresh rate (Hz)", ref Prefs.MapRefreshRate, 1, 15, "0");
+                DrawSlider(c, "Horizontal position", ref Prefs.MapX, 0, Mathf.Max(1, Screen.width - Prefs.MapSize), "0");
+                DrawSlider(c, "Vertical position", ref Prefs.MapY, 22, Mathf.Max(23, Screen.height - Prefs.MapSize), "0");
+                DrawColor(c, ref Prefs.MapEnemyColor, "Enemies");
+                DrawColor(c, ref Prefs.MapLootColor, "Loot");
+                DrawParagraph(c, "North-up terrain view. Roofs may obscure indoor floors; markers still show positions. Lower the refresh rate to reduce rendering cost.");
+            });
             AddCard(2, "ESP OVERRIDES", DrawOverrides);
         }
         /// <summary>Offers direct access to every category without cycling through hidden controls.</summary>

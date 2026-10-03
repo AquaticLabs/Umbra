@@ -44,6 +44,15 @@ namespace UmbraMenu
             Toggle("Always sprint", () => State.Movement.alwaysSprintToggle, v => State.Movement.alwaysSprintToggle = v);
             Toggle("Flight", () => State.Movement.flightToggle, v => State.Movement.flightToggle = v, false, KeyCode.C);
             Toggle("Jump pack", () => State.Movement.jumpPackToggle, v => State.Movement.jumpPackToggle = v);
+            Toggle("Infinite jumps", () => State.Movement.InfiniteJumps, v => State.Movement.InfiniteJumps = v);
+            Toggle("Override jump count", () => State.Movement.OverrideJumps, v => State.Movement.OverrideJumps = v);
+            Toggle("Speed multiplier", () => State.Movement.SpeedMultiplier, v => State.Movement.SpeedMultiplier = v);
+            Add("Increase speed", () => MovementModifiers.AdjustSpeed(1), KeyCode.Mouse3);
+            Add("Decrease speed", () => MovementModifiers.AdjustSpeed(-1), KeyCode.Mouse4);
+            Toggle("No Lunar Cost", () => State.Player.NoLunarCost, v => State.Player.NoLunarCost = v, true);
+            Toggle("Unlimited Engineer turrets", () => State.Player.UnlimitedTurrets, v => State.Player.UnlimitedTurrets = v, true);
+            Toggle("Nearest capable chest ESP", () => VisualSettings.Current.NearestChestTracer, v => VisualSettings.Current.NearestChestTracer = v);
+            Toggle("Minimap", () => VisualSettings.Current.Minimap, v => VisualSettings.Current.Minimap = v);
             Toggle("Railgunner Perfect Reload", () => State.Player.RailgunPerfectReload, v => State.Player.RailgunPerfectReload = v);
             Toggle("Enemy ESP", () => State.Render.renderMobs, v => State.Render.renderMobs = v);
             Toggle("Interactable ESP", () => State.Render.renderInteractables, v => State.Render.renderInteractables = v);

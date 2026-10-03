@@ -10,7 +10,7 @@ namespace UmbraMenu
     {
         private static Harmony harmony;
         public static bool Installed { get; private set; }
-        /// <summary>Installs Umbra's three hooks; cleans up partially installed hooks on failure.</summary>
+        /// <summary>Installs owned runtime hooks; cleans up partially installed hooks on failure.</summary>
         public static void Install()
         {
             try
@@ -20,13 +20,22 @@ namespace UmbraMenu
                 harmony.Patch(AccessTools.PropertyGetter(typeof(LocalUser), "isUIFocused"), prefix: new HarmonyMethod(typeof(GameHooks), nameof(UiFocusPrefix)));
                 harmony.Patch(AccessTools.Method(typeof(CameraRigController), "LateUpdate"), prefix: new HarmonyMethod(typeof(GameHooks), nameof(CameraPrefix)));
                 harmony.Patch(AccessTools.Method(typeof(CharacterMotor), "UpdateVelocity"), postfix: new HarmonyMethod(typeof(GameHooks), nameof(MotorPostfix)));
+                harmony.Patch(AccessTools.Method(typeof(CharacterBody), "RecalculateStats"), postfix: new HarmonyMethod(typeof(GameHooks), nameof(StatsPostfix)));
+                harmony.Patch(AccessTools.Method(typeof(CostTypeDef), "IsAffordable"), prefix: new HarmonyMethod(typeof(PurchaseModifiers), nameof(PurchaseModifiers.AffordablePrefix)));
+                harmony.Patch(AccessTools.Method(typeof(CostTypeDef), "PayCost"), prefix: new HarmonyMethod(typeof(PurchaseModifiers), nameof(PurchaseModifiers.PayPrefix)));
+                harmony.Patch(AccessTools.Method(typeof(CharacterMaster), "GetDeployableSameSlotLimit"), postfix: new HarmonyMethod(typeof(PurchaseModifiers), nameof(PurchaseModifiers.TurretLimitPostfix)));
+                harmony.Patch(AccessTools.Method(typeof(ChestBehavior), "Roll"), postfix: new HarmonyMethod(typeof(ChestReplacement), nameof(ChestReplacement.Apply)));
+                harmony.Patch(AccessTools.Method(typeof(ChestBehavior), "BaseItemDrop"),
+                    prefix: new HarmonyMethod(typeof(ChestReplacement), nameof(ChestReplacement.Apply)),
+                    postfix: new HarmonyMethod(typeof(ChestReplacement), nameof(ChestReplacement.AfterDrop)));
                 Installed = true;
             }
-            catch (Exception error) { Uninstall(); Debug.LogError("Umbra camera/input hooks could not be installed: " + error); }
+            catch (Exception error) { Uninstall(); Debug.LogError("Umbra runtime hooks could not be installed: " + error); }
         }
         /// <summary>Applies flight after native gravity/acceleration but before the motor integrates motion.</summary>
         private static void MotorPostfix(CharacterMotor __instance, ref Vector3 __0)
         { MovementController.AfterMotorVelocity(__instance, ref __0); }
+        private static void StatsPostfix(CharacterBody __instance) { MovementModifiers.AfterStats(__instance); }
         /// <summary>Suppresses local gameplay input only over Umbra or during a drag that began inside it.</summary>
         private static bool UiFocusPrefix(LocalUser __instance, ref bool __result)
         {

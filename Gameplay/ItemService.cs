@@ -18,8 +18,6 @@ namespace UmbraMenu
             public PickupIndex Pickup;
         }
         private static readonly List<Entry> catalog = new List<Entry>();
-        // Current builds expose a public getter but private setter; keep this version-specific adapter isolated.
-        private static readonly System.Reflection.MethodInfo setChestPickup = typeof(ChestBehavior).GetProperty("currentPickup")?.GetSetMethod(true);
         public static IList<Entry> Catalog { get { if (catalog.Count == 0) Refresh(); return catalog; } }
         /// <summary>Releases catalog references so a later injection starts with the current loaded content.</summary>
         public static void Clear() { catalog.Clear(); }
@@ -139,15 +137,12 @@ namespace UmbraMenu
             UmbraRuntime.LocalPlayerInv.ShrineRestackInventory(RoR2Application.rng);
         }
         /// <summary>Replaces only the nearest available chest's selected pickup within interaction-scale range.</summary>
-        public static void ReplaceNearestChest(Entry entry)
+        public static void ReplaceNearestChest(Entry entry, ChestBehavior target)
         {
             Validate(entry, 1);
             if (!UmbraRuntime.characterCollected) throw new InvalidOperationException("A living character is required.");
-            var chest = UnityEngine.Object.FindObjectsOfType<ChestBehavior>().Where(c => c && c.GetComponent<PurchaseInteraction>() && c.GetComponent<PurchaseInteraction>().available)
-                .OrderBy(c => Vector3.SqrMagnitude(c.transform.position - UmbraRuntime.LocalPlayerBody.corePosition)).FirstOrDefault();
-            if (!chest || Vector3.Distance(chest.transform.position, UmbraRuntime.LocalPlayerBody.corePosition) > 25) throw new InvalidOperationException("No unopened chest within 25 m.");
-            if (setChestPickup == null) throw new InvalidOperationException("Chest replacement is unavailable on this game build.");
-            setChestPickup.Invoke(chest, new object[] { new UniquePickup(entry.Pickup) });
+            ChestReplacement.Set(target, entry.Pickup);
+            MenuController.Toast("Chest now contains " + entry.Name);
         }
     }
 }

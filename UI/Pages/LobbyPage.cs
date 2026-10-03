@@ -35,15 +35,21 @@ namespace UmbraMenu
                             continue;
                         var candidate = user;
                         DrawButtonRow(c, new ButtonAction(
-                                (candidate == giftRecipient ? "✓ " : "") + candidate.userName,
-                                () => giftRecipient = candidate));
+                                (candidate == giftRecipient ? "✓ " : "") + candidate.userName + (LobbyProtection.IsEnabled(candidate) ? " / Protected" : ""),
+                                () => DeferLayoutChange(() => giftRecipient = candidate)));
                     }
                     DrawParagraph(c, "Select a recipient explicitly. Their character inventory becomes available after spawning.");
                 });
 
-            AddCard(1, "HOST GIFTS", c =>
+            AddCard(1, "PLAYER ACTIONS", c =>
             {
                 DrawParagraph(c, giftRecipient ? "Recipient: " + giftRecipient.userName : "No recipient selected.");
+                var body = giftRecipient && giftRecipient.master ? giftRecipient.master.GetBody() : null;
+                DrawReadout(c, "Character", body ? body.GetDisplayName() : "Not spawned");
+                DrawReadout(c, "Health", body && body.healthComponent ? body.healthComponent.health.ToString("0") + " / " + body.healthComponent.fullHealth.ToString("0") : "—");
+                DrawToggle(c, "Recipient god mode", LobbyProtection.IsEnabled(giftRecipient),
+                    enabled => LobbyProtection.Set(giftRecipient, enabled), "Protects the selected other player; follows respawns until disabled or disconnected.");
+                DrawButtonRow(c, new ButtonAction("Clear player protection", LobbyProtection.Clear));
                 DrawInput(c, "Money", ref giftMoney);
                 DrawButtonRow(c, new ButtonAction("Give money", () => GiveLobbyMoney(ParseUInt(giftMoney))));
                 DrawInput(c, "Lunar coins", ref giftCoins);

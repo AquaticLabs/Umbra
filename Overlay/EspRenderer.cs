@@ -56,7 +56,8 @@ namespace UmbraMenu
                 Source = source, Body = body, Category = category, Name = name, StyleKey = EspTargetCatalog.Key(source.gameObject, body),
                 Renderers = renderers.ToArray(), Colliders = source.GetComponentsInChildren<Collider>(),
                 Purchase = source.GetComponent<PurchaseInteraction>(), Barrel = source.GetComponent<BarrelInteraction>(),
-                Pickup = source.GetComponent<GenericPickupController>(), Chest = source.GetComponent<ChestBehavior>()
+                Pickup = source.GetComponent<GenericPickupController>(), Chest = source.GetComponent<ChestBehavior>(),
+                Terminal = source.GetComponent<ShopTerminalBehavior>()
             });
         }
 
@@ -91,7 +92,18 @@ namespace UmbraMenu
                 if (!style.Enabled) continue;
                 Bounds bounds;
                 Rect rectangle;
-                if (!GetBounds(entry, out bounds) || !OverlayGeometry.ProjectBounds(camera, bounds, out rectangle)) continue;
+                if (!GetBounds(entry, out bounds)) continue;
+                if (style.Boxes)
+                {
+                    if (!OverlayGeometry.ProjectBounds(camera, bounds, out rectangle)) continue;
+                }
+                else
+                {
+                    // Project the world anchor, not the center of viewport-clipped extents.
+                    Vector3 anchor = entry.Category == EspCategory.Teleporter ? entry.Source.transform.position + Vector3.up * 2f : bounds.center;
+                    if (!OverlayGeometry.ProjectPoint(camera, anchor, out var point)) continue;
+                    rectangle = new Rect(point.x, point.y, 0, 0);
+                }
                 if (style.Boxes) ESPHelper.Box(rectangle, style.Color, style.Thickness, Prefs.CornerBoxes);
                 float textBottom = rectangle.center.y;
                 if (style.Labels)
@@ -99,7 +111,8 @@ namespace UmbraMenu
                     string detail = Prefs.Distances ? Mathf.RoundToInt(distance) + " m" : "";
                     if (entry.Category == EspCategory.Teleporter && TeleporterInteraction.instance)
                         detail = (TeleporterInteraction.instance.isCharged ? "Charged" : TeleporterInteraction.instance.isCharging ? "Charging" : "Idle") + (detail.Length > 0 ? " / " + detail : "");
-                    if (entry.Purchase) detail += (detail.Length > 0 ? " / " : "") + entry.Purchase.cost + " " + entry.Purchase.costType;
+                    string cost = entry.Purchase ? CostLabels.Format(entry.Purchase.costType, entry.Purchase.cost) : "";
+                    Color costColor = entry.Purchase ? CostLabels.ColorFor(entry.Purchase.costType, style.Color) : style.Color;
                     string itemName = "";
                     EspStyle itemStyle = null;
                     if (entry.Chest)
@@ -107,15 +120,21 @@ namespace UmbraMenu
                         ResolvePickup(entry.Chest.currentPickup.pickupIndex, out itemName, out itemStyle);
                         if (itemName == "Pickup" || !itemStyle.Enabled || !itemStyle.Labels) itemName = "";
                     }
+                    if (entry.Terminal)
+                    {
+                        ResolvePickup(entry.Terminal.CurrentPickup().pickupIndex, out itemName, out itemStyle);
+                        if (itemName == "Pickup" || !itemStyle.Enabled || !itemStyle.Labels) itemName = "";
+                    }
                     if (!style.Boxes)
                     {
                         // Without a box, center one compact text block on the object's projected center.
-                        int lines = 1 + (detail.Length > 0 ? 1 : 0) + (itemName.Length > 0 ? 1 : 0);
+                        int lines = 1 + (detail.Length > 0 ? 1 : 0) + (itemName.Length > 0 ? 1 : 0) + (cost.Length > 0 ? 1 : 0);
                         float step = Prefs.FontSize + 3;
                         float y = rectangle.center.y - lines * step * 0.5f;
                         DrawLabel(rectangle.center.x, y, name, style.Color); y += step;
                         if (detail.Length > 0) { DrawLabel(rectangle.center.x, y, detail, style.Color); y += step; }
                         if (itemName.Length > 0) { DrawLabel(rectangle.center.x, y, itemName, itemStyle.Color); y += step; }
+                        if (cost.Length > 0) { DrawLabel(rectangle.center.x, y, cost, costColor); y += step; }
                         textBottom = y;
                     }
                     else
@@ -123,6 +142,8 @@ namespace UmbraMenu
                         DrawLabel(rectangle.center.x, Mathf.Max(0, rectangle.yMin - Prefs.FontSize - 5), name, style.Color);
                         if (detail.Length > 0) DrawLabel(rectangle.center.x, rectangle.yMax + 3, detail, style.Color);
                         if (itemName.Length > 0) DrawLabel(rectangle.center.x, rectangle.yMax + (detail.Length > 0 ? Prefs.FontSize + 6 : 3), itemName, itemStyle.Color);
+                        if (cost.Length > 0) DrawLabel(rectangle.center.x, rectangle.yMax + 3 +
+                            ((detail.Length > 0 ? 1 : 0) + (itemName.Length > 0 ? 1 : 0)) * (Prefs.FontSize + 3), cost, costColor);
                     }
                 }
                 if (entry.Body && Prefs.HealthBars && entry.Body.healthComponent)
@@ -142,6 +163,7 @@ namespace UmbraMenu
                 }
             }
             DrawReticle(camera);
+            DrawChestTracer(camera);
             if (State.Render.renderMods) DrawActiveMods();
         }
 
@@ -164,6 +186,28 @@ namespace UmbraMenu
             if (entry.Purchase && !entry.Purchase.available) return false;
             if (entry.Barrel && entry.Barrel.Networkopened) return false;
             return true;
+        }
+
+        private static void DrawChestTracer(Camera camera)
+        {
+            if (!Prefs.NearestChestTracer) return;
+            var chest = ChestReplacement.Nearest();
+            if (!chest || !OverlayGeometry.ProjectPoint(camera, chest.transform.position, out var point)) return;
+            float distance = Vector3.Distance(UmbraRuntime.LocalPlayerBody.corePosition, chest.transform.position);
+            if (distance > Prefs.MaxDistance) return;
+            ESPHelper.DrawLine(OverlayGeometry.Center(camera), point, Prefs.ChestTracerColor, Prefs.ChestTracerThickness);
+            DrawLabel(point.x, point.y + 16, "Replacement target / " + distance.ToString("0") + " m" +
+                (distance > ChestReplacement.ReplacementRange ? " / move within 25 m" : ""), Prefs.ChestTracerColor);
+        }
+
+        /// <summary>Provides live positions from the shared discovery cache, independent of ESP master switches.</summary>
+        internal static IEnumerable<Vector3> LootPositions()
+        {
+            foreach (var entry in entries)
+            {
+                if (!entry.Source || !entry.Source.gameObject.activeInHierarchy || entry.Body) continue;
+                if (entry.Pickup || (entry.Purchase && entry.Purchase.available)) yield return entry.Source.transform.position;
+            }
         }
 
         /// <summary>Unions current mesh bounds; collider/body dimensions provide a world-space fallback.</summary>
@@ -308,6 +352,7 @@ namespace UmbraMenu
             public BarrelInteraction Barrel;
             public GenericPickupController Pickup;
             public ChestBehavior Chest;
+            public ShopTerminalBehavior Terminal;
             public UnityEngine.Renderer[] Renderers;
             public Collider[] Colliders;
             public EspCategory Category;

@@ -41,6 +41,8 @@ namespace UmbraMenu
                 }
                 requestedVelocity = inputAllowed && input ? input.moveVector * (body.isSprinting ? 40f : 20f) : Vector3.zero;
                 requestedVelocity.y = inputAllowed && input ? input.jump.down ? 20f : Input.GetKey(KeyCode.X) ? -20f : 0f : 0f;
+                if (State.Movement.SpeedMultiplier)
+                    requestedVelocity *= VisualSettings.Clamp(VisualSettings.Current.SpeedMultiplier, 0.1f, 20f, 1f);
                 // Keep the public velocity consistent between fixed ticks, including menu-only frames.
                 motor.velocity = requestedVelocity;
             }

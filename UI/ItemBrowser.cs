@@ -62,14 +62,23 @@ namespace UmbraMenu
                         CatalogWidgets.AmountActions(c, "self:" + entry.Id, ref amount, give,
                             new ButtonAction("Drop", () => ItemService.Drop(entry, ItemCount(requested), false)));
                         DrawButtonRow(c, new ButtonAction("Drop from inventory", () => ItemService.Drop(entry, ItemCount(requested), true)));
-                        DrawButtonRow(c, new ButtonAction("Replace nearest chest", () => ConfirmAction("Replace nearest chest: " + entry.Id, () => ItemService.ReplaceNearestChest(entry)), true));
+                        DrawButtonRow(c, new ButtonAction("Replace nearest chest", () =>
+                        {
+                            var target = ChestReplacement.Nearest();
+                            if (!target) throw new InvalidOperationException("No eligible chest found.");
+                            ConfirmAction("Replace chest " + target.GetInstanceID() + ": " + entry.Id, () => ItemService.ReplaceNearestChest(entry, target));
+                        }, true));
                     }
                 }
                 finally { GUI.enabled = enabled; }
                 if (!c.Measuring) quantities[entry.Id] = amount;
                 if (entry.Equipment) DrawParagraph(c, "Give replaces the active equipment slot. Use amount 1.");
                 else DrawParagraph(c, "Amount: 1–100. Items must be available in this run.");
-                if (!giftsOnly) DrawParagraph(c, "Drop creates pickups; Drop from inventory transfers owned copies. Chest replacement requires two clicks and targets an unopened chest within 25 m.");
+                if (!giftsOnly)
+                {
+                    DrawToggle(c, "Nearest capable chest ESP", Prefs.NearestChestTracer, v => Prefs.NearestChestTracer = v, null);
+                    DrawParagraph(c, "Enable nearest capable chest ESP to see where this item will go. Move within 25 m; click twice to confirm. Choice, Command and Delusion chests are excluded.");
+                }
                 c.Space(6);
             }
             if (resultCount == 0) DrawParagraph(c, "No matching items.");

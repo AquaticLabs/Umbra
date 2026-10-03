@@ -7,7 +7,7 @@ namespace UmbraMenu.State
     // These state-only modules replace the old menu objects. UI controls never construct hidden windows.
 
     /// <summary>Session-only player toggles; currency and respawn use game APIs through MenuActions.</summary>
-    internal static class Player { public static bool GodToggle, SkillToggle, AimBotToggle, RailgunPerfectReload; }
+    internal static class Player { public static bool GodToggle, SkillToggle, AimBotToggle, RailgunPerfectReload, UnlimitedTurrets, NoLunarCost; }
 
     /// <summary>Requested stat values; StatOverrides owns capture, apply, and restoration.</summary>
     internal static class StatsMod
@@ -18,7 +18,7 @@ namespace UmbraMenu.State
     }
 
     /// <summary>Session-only movement switches consumed by the runtime coordinator.</summary>
-    internal static class Movement { public static bool alwaysSprintToggle, flightToggle, jumpPackToggle; }
+    internal static class Movement { public static bool alwaysSprintToggle, flightToggle, jumpPackToggle, InfiniteJumps, OverrideJumps, SpeedMultiplier; }
 
     /// <summary>Director parameters and ownership of spawned interactables.</summary>
     internal static class Spawn
